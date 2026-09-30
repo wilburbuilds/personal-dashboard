@@ -44,3 +44,10 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+
+# Local personal data and secrets
+/data/
+*.sqlite*
+*.db*
+*.log
+*.tsbuildinfo
