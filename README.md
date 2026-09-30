@@ -77,3 +77,15 @@ DASHBOARD_ORIGIN=https://machine.tailnet.ts.net:9443 npm run service:install
 Open https://machine.tailnet.ts.net:9443 from a device connected to your Tailscale network. Preserve `DASHBOARD_ORIGIN` when reinstalling the startup service. Do not enable Tailscale Funnel for this dashboard.
 
 The glass interface uses translucent layers, blur, subtle edge highlights, and a system font. It respects reduced motion and reduced transparency preferences, and has a solid-surface fallback for browsers without backdrop blur.
+
+## HomePod receiver
+
+The dashboard exposes a private setup page at `/homekit`. Its reveal button retrieves a copy-ready automation prompt with the real receiver address and a token; do not share that prompt or commit the token. The token is generated once and stored with permissions 0600 outside the repository in the dashboard data directory.
+
+The separate intake server accepts only `POST /api/homekit` on port 3088, requires `Authorization: Bearer <token>`, limits requests to 16 KiB, and validates temperatures, humidity, room names, and observation times. It exposes no dashboard, settings, or read endpoint on the LAN. The dashboard stays localhost/Tailscale-only. LAN intake uses HTTP; the token is scoped only to submitting HomePod readings.
+
+Install the service with `HOMEKIT_BIND_ADDRESS` set to the mini's LAN IPv4 address and `HOMEKIT_RECEIVER_URL` set to `http://localhost:3088/api/homekit`. The installer preserves existing port/origin/receiver settings on subsequent updates. If DHCP changes the mini's LAN address, update HOMEKIT_BIND_ADDRESS and reinstall the service; a router DHCP reservation avoids this.
+
+Readings persist separately in `homekit.sqlite`, survive brief snapshot updates, and retain 30 days of history. Duplicate room/timestamp readings are ignored; older uploads never replace newer measurements. “At home” displays Fahrenheit, humidity, timestamps, and a 24-hour temperature trend after multiple readings arrive. Readings older than one hour are marked stale. While visible, the dashboard reloads saved data every minute.
+
+Apple Home scheduling and permissions must be configured on the iPhone and verified with a real reading. No Home automation has been created by installing this receiver. `node --test tests/homekit.test.mjs` exercises authentication, validation, duplicate handling, and stale/out-of-order data using isolated temporary storage.

@@ -1,3 +1,4 @@
+import { startHomeKitReceiver } from './homekit-receiver.mjs';
 import next from 'next';
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
@@ -21,5 +22,6 @@ const server=createServer((req,res)=>{
  if(['POST','PUT','PATCH','DELETE'].includes(req.method)&&req.headers['sec-fetch-site']==='cross-site'){res.writeHead(403);return res.end('Cross-site request denied');}
  handle(req,res);
 });
+const homekit=startHomeKitReceiver();
 server.listen(port,'127.0.0.1',()=>console.log(`Personal dashboard: http://127.0.0.1:${port}`));
-for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>{server.close(()=>process.exit(0));setTimeout(()=>process.exit(0),5000).unref();});
+for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>{homekit?.close();server.close(()=>process.exit(0));setTimeout(()=>process.exit(0),5000).unref();});

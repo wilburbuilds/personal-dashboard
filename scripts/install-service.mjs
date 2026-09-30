@@ -8,9 +8,12 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const label='com.home-dashboard';
 const domain=`gui/${process.getuid()}`;
 const plist=join(homedir(),'Library','LaunchAgents',label+'.plist');
-const port=process.env.PORT||'3000';
+let previous={};
+const prior=spawnSync('plutil',['-extract','EnvironmentVariables','json','-o','-',plist],{encoding:'utf8'});
+if(prior.status===0){try{previous=JSON.parse(prior.stdout);}catch{}}
+const port=process.env.PORT||previous.PORT||'3000';
 if(!/^\d+$/.test(port)||+port<1024||+port>65535)throw new Error('Invalid PORT');
-const origin=process.env.DASHBOARD_ORIGIN||'';
+const origin=process.env.DASHBOARD_ORIGIN??previous.DASHBOARD_ORIGIN??'';
 if(origin){const u=new URL(origin);if(u.protocol!=='https:'||!u.hostname.endsWith('.ts.net')||u.origin!==origin)throw new Error('Invalid private Tailscale origin');}
 const data=join(homedir(),'Library','Application Support','Personal Dashboard');
 if(process.argv.includes('--uninstall')){
@@ -25,7 +28,7 @@ await writeFile(plist,`<?xml version="1.0" encoding="UTF-8"?>
 <key>Label</key><string>${label}</string>
 <key>ProgramArguments</key><array><string>${xml(process.execPath)}</string><string>${xml(join(root,'scripts','start.mjs'))}</string></array>
 <key>WorkingDirectory</key><string>${xml(root)}</string>
-<key>EnvironmentVariables</key><dict><key>NODE_ENV</key><string>production</string><key>PORT</key><string>${port}</string><key>DASHBOARD_ORIGIN</key><string>${xml(origin)}</string><key>DASHBOARD_DATA_DIR</key><string>${xml(data)}</string></dict>
+<key>EnvironmentVariables</key><dict><key>HOMEKIT_BIND_ADDRESS</key><string>${xml(process.env.HOMEKIT_BIND_ADDRESS??previous.HOMEKIT_BIND_ADDRESS??'')}</string><key>HOMEKIT_RECEIVER_URL</key><string>${xml(process.env.HOMEKIT_RECEIVER_URL??previous.HOMEKIT_RECEIVER_URL??'http://localhost:3088/api/homekit')}</string><key>NODE_ENV</key><string>production</string><key>PORT</key><string>${port}</string><key>DASHBOARD_ORIGIN</key><string>${xml(origin)}</string><key>DASHBOARD_DATA_DIR</key><string>${xml(data)}</string></dict>
 <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>15</integer>
 <key>StandardOutPath</key><string>${xml(join(data,'server.log'))}</string>
 <key>StandardErrorPath</key><string>${xml(join(data,'error.log'))}</string>
