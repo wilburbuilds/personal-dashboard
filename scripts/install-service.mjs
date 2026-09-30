@@ -8,6 +8,10 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const label='com.home-dashboard';
 const domain=`gui/${process.getuid()}`;
 const plist=join(homedir(),'Library','LaunchAgents',label+'.plist');
+const port=process.env.PORT||'3000';
+if(!/^\d+$/.test(port)||+port<1024||+port>65535)throw new Error('Invalid PORT');
+const origin=process.env.DASHBOARD_ORIGIN||'';
+if(origin){const u=new URL(origin);if(u.protocol!=='https:'||!u.hostname.endsWith('.ts.net')||u.origin!==origin)throw new Error('Invalid private Tailscale origin');}
 const data=join(homedir(),'Library','Application Support','Personal Dashboard');
 if(process.argv.includes('--uninstall')){
  spawnSync('launchctl',['bootout',`${domain}/${label}`]);await unlink(plist).catch(e=>{if(e.code!=='ENOENT')throw e;});console.log('Startup service removed. Personal data kept.');process.exit(0);
@@ -21,7 +25,7 @@ await writeFile(plist,`<?xml version="1.0" encoding="UTF-8"?>
 <key>Label</key><string>${label}</string>
 <key>ProgramArguments</key><array><string>${xml(process.execPath)}</string><string>${xml(join(root,'scripts','start.mjs'))}</string></array>
 <key>WorkingDirectory</key><string>${xml(root)}</string>
-<key>EnvironmentVariables</key><dict><key>NODE_ENV</key><string>production</string><key>PORT</key><string>3000</string><key>DASHBOARD_DATA_DIR</key><string>${xml(data)}</string></dict>
+<key>EnvironmentVariables</key><dict><key>NODE_ENV</key><string>production</string><key>PORT</key><string>${port}</string><key>DASHBOARD_ORIGIN</key><string>${xml(origin)}</string><key>DASHBOARD_DATA_DIR</key><string>${xml(data)}</string></dict>
 <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>15</integer>
 <key>StandardOutPath</key><string>${xml(join(data,'server.log'))}</string>
 <key>StandardErrorPath</key><string>${xml(join(data,'error.log'))}</string>
@@ -29,4 +33,4 @@ await writeFile(plist,`<?xml version="1.0" encoding="UTF-8"?>
 spawnSync('launchctl',['bootout',`${domain}/${label}`]);
 const result=spawnSync('launchctl',['bootstrap',domain,plist],{stdio:'inherit'});
 if(result.status!==0)process.exit(result.status||1);
-console.log('Dashboard service installed for this Mac user. It starts at login: http://127.0.0.1:3000');
+console.log(`Dashboard service installed for this Mac user. It starts at login: ${origin||'http://127.0.0.1:'+port}`);

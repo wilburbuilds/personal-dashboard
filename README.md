@@ -62,3 +62,18 @@ Code changes are committed and pushed explicitly. There is no unattended code de
 `npm run dev` starts the development server on loopback. `npm run typecheck` checks types. Production uses `npm run build` followed by `npm start`.
 
 See [UPDATE.md](UPDATE.md) for the local daily-update API. The initial private Sites preview remains a separate older deployment; this repository no longer publishes to it.
+
+## Private Tailscale access
+
+For this installation the dashboard has its own Tailscale HTTPS listener on port 9443. Existing listeners remain unchanged. The Node server still binds only to 127.0.0.1:3000. Tailscale Serve grants access according to the tailnet's access rules; it is not a public Funnel.
+
+On the Mac mini, install or update the service with its exact private origin:
+
+```sh
+DASHBOARD_ORIGIN=https://machine.tailnet.ts.net:9443 npm run service:install
+/Applications/Tailscale.app/Contents/MacOS/Tailscale serve --bg --https=9443 http://127.0.0.1:3000
+```
+
+Open https://machine.tailnet.ts.net:9443 from a device connected to your Tailscale network. Preserve `DASHBOARD_ORIGIN` when reinstalling the startup service. Do not enable Tailscale Funnel for this dashboard.
+
+The glass interface uses translucent layers, blur, subtle edge highlights, and a system font. It respects reduced motion and reduced transparency preferences, and has a solid-surface fallback for browsers without backdrop blur.
