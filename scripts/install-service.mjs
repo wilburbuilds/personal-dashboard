@@ -34,6 +34,11 @@ await writeFile(plist,`<?xml version="1.0" encoding="UTF-8"?>
 <key>StandardErrorPath</key><string>${xml(join(data,'error.log'))}</string>
 </dict></plist>`,{mode:0o600});
 spawnSync('launchctl',['bootout',`${domain}/${label}`]);
-const result=spawnSync('launchctl',['bootstrap',domain,plist],{stdio:'inherit'});
-if(result.status!==0)process.exit(result.status||1);
+let result;
+for(let attempt=0;attempt<8;attempt++){
+ result=spawnSync('launchctl',['bootstrap',domain,plist],{encoding:'utf8'});
+ if(result.status===0)break;
+ await new Promise(resolve=>setTimeout(resolve,500));
+}
+if(result.status!==0){console.error(result.stderr);process.exit(result.status||1);}
 console.log(`Dashboard service installed for this Mac user. It starts at login: ${origin||'http://127.0.0.1:'+port}`);
