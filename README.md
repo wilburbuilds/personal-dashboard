@@ -95,3 +95,7 @@ Apple Home scheduling and permissions must be configured on the iPhone and verif
 The health tile reads the latest dated export from `~/vaults/personal/fitness/fitbit-air/raw/`, plus `fitness/current-program.md` and `fitness/training-log.md`. Override the vault root with `DASHBOARD_PERSONAL_VAULT` for local development. It shows Fitbit main-sleep time asleep, Fitbit resting heart rate (excluding duplicate Apple Health sources), and daily steps as of import. Missing metrics stay blank; stale or partial readings are flagged. Training notes are labeled as saved plans/log entries, not inferred workout completion.
 
 The browser receives only display metrics and training summaries, never raw export IDs or credentials. It rereads exports on each dashboard refresh; this reader does not itself sync the wearable or schedule the existing Fitbit importer. Tests: `node --test tests/health.test.mjs`.
+
+## Weather source
+
+Weather uses the saved city preference, Open-Meteo geocoding, and the daily forecast API. Use a specific location such as `Portland, Oregon`; ambiguous matches are rejected. High/low Fahrenheit and a daily condition icon refresh on dashboard requests, cached for 30 minutes. Failed requests retain only a clearly marked same-day forecast; older forecasts are not presented as today's weather. Source attribution appears on the tile. Location queries are sent to Open-Meteo; no account credentials are needed.
