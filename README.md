@@ -89,3 +89,9 @@ Install the service with `HOMEKIT_BIND_ADDRESS` set to the mini's LAN IPv4 addre
 Readings persist separately in `homekit.sqlite`, survive brief snapshot updates, and retain 30 days of history. Duplicate room/timestamp readings are ignored; older uploads never replace newer measurements. “At home” displays Fahrenheit, humidity, timestamps, and a 24-hour temperature trend after multiple readings arrive. Readings older than one hour are marked stale. While visible, the dashboard reloads saved data every minute.
 
 Apple Home scheduling and permissions must be configured on the iPhone and verified with a real reading. No Home automation has been created by installing this receiver. `node --test tests/homekit.test.mjs` exercises authentication, validation, duplicate handling, and stale/out-of-order data using isolated temporary storage.
+
+## Health source
+
+The health tile reads the latest dated export from `~/vaults/personal/fitness/fitbit-air/raw/`, plus `fitness/current-program.md` and `fitness/training-log.md`. Override the vault root with `DASHBOARD_PERSONAL_VAULT` for local development. It shows Fitbit main-sleep time asleep, Fitbit resting heart rate (excluding duplicate Apple Health sources), and daily steps as of import. Missing metrics stay blank; stale or partial readings are flagged. Training notes are labeled as saved plans/log entries, not inferred workout completion.
+
+The browser receives only display metrics and training summaries, never raw export IDs or credentials. It rereads exports on each dashboard refresh; this reader does not itself sync the wearable or schedule the existing Fitbit importer. Tests: `node --test tests/health.test.mjs`.
