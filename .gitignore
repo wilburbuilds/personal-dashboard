@@ -51,3 +51,8 @@ next-env.d.ts
 *.db*
 *.log
 *.tsbuildinfo
+
+# Google OAuth local copies if ever created inside the checkout
+/google-oauth.json
+/oauth.json
+/tokens.json

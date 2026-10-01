@@ -11,7 +11,10 @@
     "start": "node scripts/start.mjs",
     "typecheck": "tsc --noEmit",
     "service:install": "node scripts/install-service.mjs",
-    "service:uninstall": "node scripts/install-service.mjs --uninstall"
+    "service:uninstall": "node scripts/install-service.mjs --uninstall",
+    "oauth:calendar": "node scripts/oauth-login.mjs",
+    "test:calendar": "node --test tests/calendar.test.mjs",
+    "test:unit": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
