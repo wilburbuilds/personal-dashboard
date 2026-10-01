@@ -97,11 +97,15 @@ The health tile reads the latest dated export from `~/vaults/personal/fitness/fi
 The browser receives only display metrics and training summaries, never raw export IDs or credentials. It rereads exports on each dashboard refresh; this reader does not itself sync the wearable or schedule the existing Fitbit importer. Tests: `node --test tests/health.test.mjs`.
 
 
-## Calendar source
+## Google Calendar + Gmail
 
-Personal Google Calendar for **your personal Google account** only (never the work account). Phase 1 is a raw morning-brief floor: remaining today in America/Los_Angeles, capped ~12 hours ahead, overlaid into `GET /api/dashboard` like health.
+Personal Google Calendar and Gmail for **your personal Google account** only (never the work account). Read-only morning-brief overlays into `GET /api/dashboard`:
 
-OAuth client secrets and tokens live in `~/.config/personal-dashboard/` (outside git). See [CALENDAR.md](CALENDAR.md) for GCP console steps (reuse fitbit-air-ingest project + new Web client on port 8766), `npm run oauth:calendar`, and publishing notes for long-lived refresh tokens. Unit tests: `npm run test:calendar`.
+- **Calendar**: remaining today in America/Los_Angeles, capped ~12 hours ahead.
+- **Overnight** (“While you were away”): inbox mail in the 10 PM–8 AM Pacific window within ~24 hours.
+- **Follow-ups** (“A little nudge”): inbox unread, important, or starred from the last 3 days (small cap).
+
+OAuth client secrets and tokens live in `~/.config/personal-dashboard/` (outside git). See [GOOGLE.md](GOOGLE.md) for GCP console steps (reuse fitbit-air-ingest + Web client on port 8766), `npm run oauth:google`, and publishing notes. Unit tests: `npm run test:calendar` and `npm run test:gmail`.
 
 ## Weather source
 

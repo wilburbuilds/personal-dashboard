@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * Local loopback OAuth for personal Google Calendar (your personal Google account only).
+ * Local loopback OAuth for personal Google Calendar + Gmail (your personal Google account only).
  * Reads ~/.config/personal-dashboard/oauth.json, opens consent, captures code on
  * http://127.0.0.1:8766/oauth/callback, writes tokens.json (mode 0600).
+ * Scopes: calendar.readonly + gmail.readonly (prompt=consent so refresh gains new scopes).
  * Do not commit oauth.json or tokens. Never use a work account.
  */
 import { createServer } from 'node:http';
@@ -10,7 +11,8 @@ import { readFile, mkdir, writeFile, chmod } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { CALENDAR_SCOPES, configDirectory, oauthPath, tokensPath, saveTokens } from '../lib/calendar.mjs';
+import { configDirectory, oauthPath, tokensPath, saveTokens } from '../lib/calendar.mjs';
+import { GOOGLE_SCOPES } from '../lib/gmail.mjs';
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -69,7 +71,7 @@ function waitForCode(redirectUri, expectedState) {
         }
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(
-          '<h1>Personal dashboard: calendar authorized</h1><p>You can close this tab and return to the terminal.</p>',
+          '<h1>Personal dashboard: Google authorized</h1><p>Calendar + Gmail readonly granted. You can close this tab and return to the terminal.</p>',
         );
         server.close();
         resolve(code);
@@ -114,7 +116,7 @@ async function main() {
     client_id: oauth.client_id,
     redirect_uri: oauth.redirect_uri,
     response_type: 'code',
-    scope: CALENDAR_SCOPES.join(' '),
+    scope: GOOGLE_SCOPES.join(' '),
     access_type: 'offline',
     prompt: 'consent',
     include_granted_scopes: 'true',
@@ -157,7 +159,7 @@ async function main() {
     /* ignore */
   }
   console.log(`Saved tokens → ${oauth.token_path} (mode 0600)`);
-  console.log('Success. Restart the dashboard service (or wait for the next refresh) to load calendar.');
+  console.log('Success. Restart the dashboard service (or wait for the next refresh) to load calendar + Gmail overnight/followups.');
 }
 
 main().catch((error) => {
