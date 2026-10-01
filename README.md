@@ -115,4 +115,8 @@ Weather uses the saved city preference, Open-Meteo geocoding, and the daily fore
 
 ## Headline sources
 
-The initial topic selection uses BBC World and Technology, TechCrunch AI, CNBC markets, and NPR politics RSS feeds. The tile shows up to two recent titles per topic, links directly to publishers, deduplicates matching URLs/titles, and excludes undated, future, and older-than-36-hour articles. Overnight labels mean publication between 10 PM and 8 AM Pacific within the past 24 hours. Feeds refresh on dashboard requests, cached for 30 minutes. Partial feed failures are named; this is a topic feed selection, not an AI-written briefing. Edit `lib/headlines.mjs` to change publishers; preference text records editorial requests but does not dynamically change the feed configuration.
+**Floor:** BBC World and Technology, TechCrunch AI, CNBC markets, and NPR politics RSS (`lib/headlines.mjs`). Up to two recent titles per topic, publisher links, deduplicated URLs/titles, latest 36 hours. Overnight labels mean 10 PM–8 AM Pacific within the past 24 hours. Feeds refresh on dashboard requests, cached for 30 minutes.
+
+**Curated overlay (preferred when fresh):** If today’s Pacific morning brief exists at `~/vaults/personal/briefs/morning/YYYY-MM-DD.md` and its `## Headlines` section parses to ≥1 markdown link (`- [Title](url) — optional why`, max ~6), `GET /api/dashboard` **replaces** RSS headlines with that curated list. Same freshness idea as overnight mail curation. Agents that skip the vault may `PUT /api/headlines-curation` with a JSON source (same Pacific day, ≥1 item). Vault wins when both are fresh. Missing/stale/empty → RSS floor.
+
+Copy-paste agent instructions: [AGENT_HEADLINES_PROMPT.md](AGENT_HEADLINES_PROMPT.md). Vault README lives only on the mini under `briefs/morning/` (personal is not on GitHub). Edit `lib/headlines.mjs` to change RSS publishers; preference text does not reconfigure feeds.
