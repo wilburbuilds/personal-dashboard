@@ -16,7 +16,11 @@
     "test:calendar": "node --test tests/calendar.test.mjs",
     "test:unit": "node --test tests/*.test.mjs",
     "oauth:google": "node scripts/oauth-login.mjs",
-    "test:gmail": "node --test tests/gmail.test.mjs"
+    "test:gmail": "node --test tests/gmail.test.mjs",
+    "curate:overnight": "node scripts/curate-overnight.mjs",
+    "service:install-overnight-curate": "node scripts/install-overnight-curate.mjs",
+    "service:uninstall-overnight-curate": "node scripts/install-overnight-curate.mjs --uninstall",
+    "test:overnight-curate": "node --test tests/overnight-curate.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
