@@ -6,15 +6,16 @@ async function get(url: string) {
   if(!response.ok) throw Error('Weather source unavailable');
   return response.json();
 }
-export async function readWeatherSource(city: string): Promise<Source> {
-  const key=city.trim().toLowerCase();
+export async function readWeatherSource(city: string, coordinates?: {latitude:number;longitude:number}): Promise<Source> {
+  const key=coordinates?`device:${coordinates.latitude.toFixed(2)},${coordinates.longitude.toFixed(2)}`:city.trim().toLowerCase();
   if(!key) return {status:'unconnected',updatedAt:null,items:[],note:'Choose your weather location in preferences.'};
-  const saved=await readRecord('weather-cache');
+  const cacheKey=coordinates?'device-weather-cache':'weather-cache';
+  const saved=await readRecord(cacheKey);
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles'}).format(new Date());
   const previous=saved?.key===key?saved:null;
   if(previous?.day===today && Date.now()-Date.parse(previous.source.updatedAt)<30*60000) return previous.source;
   try {
-    let place=previous?.place;
+    let place=coordinates?{latitude:Number(coordinates.latitude.toFixed(2)),longitude:Number(coordinates.longitude.toFixed(2)),name:'Your current location'}:previous?.place;
     if(!place){
       const [name,...qualifiers]=key.split(',').map(v=>v.trim()).filter(Boolean);
       const geo=await get(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=100&language=en&format=json`);
@@ -28,8 +29,8 @@ export async function readWeatherSource(city: string): Promise<Source> {
     if(daily?.time?.[0]!==today || ![high,low,code].every(Number.isFinite)) throw Error('Forecast incomplete');
     const condition=code>=95?'storm':[71,73,75,77,85,86].includes(code)?'snow':code>=51?'rain':code>=2?'cloud':'sun';
     const description={storm:'Thunderstorms',snow:'Snow',rain:'Rain or drizzle',cloud:'Cloudy or foggy',sun:'Clear or mostly clear'}[condition];
-    const source:Source={status:'ready',updatedAt:new Date().toISOString(),items:[],note:`${description} · Today’s forecast · Open-Meteo`,weather:{condition,high:Math.round(high),low:Math.round(low),unit:'F',location:[place.name,place.admin1].filter(Boolean).join(', ')}};
-    await saveRecord('weather-cache',{key,day:today,place,source});
+    const source:Source={status:'ready',updatedAt:new Date().toISOString(),items:[],note:`${description} · Today’s forecast · Pacific time · Open-Meteo`,weather:{condition,high:Math.round(high),low:Math.round(low),unit:'F',location:[place.name,place.admin1].filter(Boolean).join(', ')}};
+    await saveRecord(cacheKey,{key,day:today,place,source});
     return source;
   }catch {
     if(previous?.day===today) return {...previous.source,status:'error',note:'Weather refresh unavailable. Showing the last saved forecast for today · Open-Meteo.'};
