@@ -92,6 +92,14 @@ Apple Home scheduling and permissions must be configured on the iPhone and verif
 
 ## Health source
 
+## Markets and Workout
+
+Markets and Workout are returned alongside the dashboard snapshot (not snapshot source keys).
+
+- **Markets strip:** live SPY and US 10-year (`^TNX`) from Yahoo Finance chart quotes.
+- **Positions:** Quiet-list rows (day P/L badges, sparklines) parsed from `~/morning/index.html` when the morning page has been curated.
+- **Workout:** today’s session from `~/vaults/personal/fitness/current-program.md` (Mon Day C / Tue Day A / Thu Day B / Sat technique). Labeled **Workout**, never Lift. Override morning HTML with `DASHBOARD_MORNING_HTML`; vault root with `DASHBOARD_PERSONAL_VAULT`.
+
 The health tile reads the latest dated export from `~/vaults/personal/fitness/fitbit-air/raw/`, plus `fitness/current-program.md` and `fitness/training-log.md`. Override the vault root with `DASHBOARD_PERSONAL_VAULT` for local development. It shows Fitbit main-sleep time asleep, Fitbit resting heart rate (excluding duplicate Apple Health sources), and daily steps as of import. Missing metrics stay blank; stale or partial readings are flagged. Training notes are labeled as saved plans/log entries, not inferred workout completion.
 
 The browser receives only display metrics and training summaries, never raw export IDs or credentials. It rereads exports on each dashboard refresh; this reader does not itself sync the wearable or schedule the existing Fitbit importer. Tests: `node --test tests/health.test.mjs`.
