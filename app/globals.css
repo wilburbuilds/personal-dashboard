@@ -50,8 +50,31 @@ main{max-width:1440px;padding-top:20px}.topbar{height:64px;padding:0 20px;border
 .pos.down .pnl{background:#eb5d2a}
 .pos .pct{font-size:14px;font-weight:700;letter-spacing:-.02em;line-height:1.15;color:#fff}
 .pos .dollars{font-size:11.5px;font-weight:600;line-height:1.15;color:rgba(255,255,255,.92)}
-.pos-list svg{display:block;width:84px;height:32px;justify-self:center}
-.spark-gap{display:block;width:84px;height:32px}
+.pos-list svg.spark{
+  display:block;
+  width:84px;
+  height:32px;
+  min-width:84px;
+  justify-self:center;
+  overflow:visible;
+  flex-shrink:0;
+  color:transparent; /* avoid currentColor bleed into strokes */
+}
+.pos-list svg.spark line.prior-close{
+  stroke:#c8ced6;
+  stroke-dasharray:1.5 2.5;
+  stroke-width:1;
+  fill:none;
+}
+.pos-list svg.spark polyline.path{
+  fill:none;
+  stroke-width:1.75;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.pos-list .pos.up svg.spark polyline.path{stroke:#5ac53a}
+.pos-list .pos.down svg.spark polyline.path{stroke:#eb5d2a}
+.spark-gap{display:block;width:84px;min-width:84px;height:32px;justify-self:center}
 
 .workout-card .session{margin:16px 0 4px;font-size:22px;font-weight:600;letter-spacing:-.03em;color:#1f3550}
 .workout-meta{margin:0;font-size:13px;color:#536880}
@@ -67,6 +90,6 @@ main{max-width:1440px;padding-top:20px}.topbar{height:64px;padding:0 20px;border
   .quote-strip{gap:14px 20px}
   .quote{flex-wrap:wrap;gap:8px 10px}
   .quote .num{font-size:22px}
-  .pos-list .pos{grid-template-columns:minmax(0,1fr) auto;gap:10px}
-  .pos-list svg,.spark-gap{display:none}
+  .pos-list .pos{grid-template-columns:minmax(0,1fr) 72px auto;gap:8px}
+  .pos-list svg.spark,.spark-gap{display:block;width:72px;min-width:72px;height:28px}
 }

@@ -225,9 +225,29 @@ export default function Dashboard(){
                   <span className="shares">{p.quantity}</span>
                 </div>
                 {p.sparkline?(
-                  <svg viewBox="0 0 84 32" width="84" height="32" aria-hidden="true">
-                    {p.sparkline.priorY!=null&&<line x1="4" y1={p.sparkline.priorY} x2="80" y2={p.sparkline.priorY} stroke="#c8ced6" strokeDasharray="1.5 2.5" strokeWidth="1"/>}
-                    <polyline points={p.sparkline.points} fill="none" stroke={p.sparkline.color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg className="spark" viewBox="0 0 84 32" width="84" height="32" aria-hidden="true" focusable="false">
+                    {p.sparkline.priorY!=null&&(
+                      <line
+                        className="prior-close"
+                        x1="4"
+                        y1={p.sparkline.priorY}
+                        x2="80"
+                        y2={p.sparkline.priorY}
+                        stroke="#c8ced6"
+                        strokeDasharray="1.5 2.5"
+                        strokeWidth="1"
+                        fill="none"
+                      />
+                    )}
+                    <polyline
+                      className="path"
+                      points={p.sparkline.points}
+                      fill="none"
+                      stroke={p.sparkline.color || (p.direction==='up'?'#5ac53a':'#eb5d2a')}
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 ):<span className="spark-gap" aria-hidden="true"/>}
                 <div className="pnl">
