@@ -1,3 +1,5 @@
-import Dashboard from './dashboard';
-export const dynamic='force-dynamic';
-export default function Home(){return <Dashboard/>;}
+import { redirect } from 'next/navigation';
+
+export default function Home() {
+  redirect('/t/today');
+}
