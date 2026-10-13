@@ -40,6 +40,10 @@ const budget: TabPlugin<BudgetData> = {
     const n = d.actions.filter((a) => a.tone === 'over' || a.tone === 'warn').length;
     return n ? { count: n, tone: d.actions.some((a) => a.tone === 'over') ? 'over' : 'warn' } : null;
   },
-  summary: (d) => (d.totals.target ? (d.totals.overPace > 0 ? `$${Math.round(d.totals.overPace / 100)} over pace` : 'On pace') : `$${Math.round(d.totals.spent / 100)} spent`),
+  summary: (d) => {
+    const n = d.actions.filter((a) => a.tone === 'over' || a.tone === 'warn').length;
+    if (n) return `${n} to act on`;
+    return d.totals.target ? (d.totals.overPace > 0 ? `$${Math.round(d.totals.overPace / 100)} over pace` : 'On pace') : `$${Math.round(d.totals.spent / 100)} spent`;
+  },
 };
 export default budget;
