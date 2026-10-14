@@ -242,7 +242,7 @@ function WorkoutsView({ data }: { data: HealthData }) {
                 <div className="lgi" key={r.date + r.session}>
                   <span className="dt num">{shortDate(r.date)}</span>
                   <div>
-                    <b>{r.session.replace(/:\s*NOT DONE$/i, '').replace(/^Skipped \((.+)\)$/, '$1')}{miss ? <span className="st-miss" title={r.state === 'missed' ? 'Not done' : 'Skipped'}><CircleX aria-label={r.state === 'missed' ? 'Not done' : 'Skipped'} /></span> : r.state === 'fitbit' ? <span className="faint"><Watch aria-label="Detected by Fitbit" /></span> : null}</b>
+                    <b>{cap(r.session.replace(/:\s*NOT DONE$/i, '').replace(/^Skipped \((.+)\)$/, '$1'))}{miss ? <span className="st-miss" title={r.state === 'missed' ? 'Not done' : 'Skipped'}><CircleX aria-label={r.state === 'missed' ? 'Not done' : 'Skipped'} /></span> : r.state === 'fitbit' ? <span className="faint"><Watch aria-label="Detected by Fitbit" /></span> : null}</b>
                     {r.results ? <MarkdownNote body={r.results} refs={w.refs} compact settings={data.md} /> : miss ? <p>{r.state === 'missed' ? 'Not done' : 'Skipped'}</p> : null}
                     {r.notes ? <MarkdownNote body={r.notes} refs={w.refs} compact settings={data.md} className="note" /> : null}
                   </div>
@@ -273,6 +273,8 @@ function WorkoutsView({ data }: { data: HealthData }) {
     </>
   );
 }
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function SessionTable({ rows }: { rows: { name: string; sets: string }[] }) {
   return (

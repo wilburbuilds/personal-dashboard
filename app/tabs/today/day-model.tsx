@@ -45,7 +45,7 @@ export function buildDay(items: CalItem[], tonight: Tonight | null, now: Date) {
     const idx = events.findIndex((e) => e.start > nowMin);
     return { name, events, nowIndex: idx === -1 ? events.length : idx };
   }).filter((b) => b.events.length || b.name === nowBand);
-  const upcoming = evs.filter((e) => !e.past && !e.workout && e.start >= nowMin);
+  const upcoming = evs.filter((e) => !e.past && !e.workout); // includes anything still in progress
   const workout = evs.find((e) => e.workout && !e.past) ?? null;
   return { allDay, bands, nowBand, upcoming, workout, empty: !evs.some((e) => !e.past) && !allDay.length };
 }
