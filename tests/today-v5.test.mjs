@@ -17,3 +17,17 @@ test('x trends: missing, valid, stale and invalid files', async () => {
   writeFileSync(f, JSON.stringify({ items: [{ title: 'x', url: 'javascript:alert(1)' }] }));
   assert.equal((await readXTrends(f)).status, 'error');
 });
+
+test('x-trends: numeric posts are accepted and formatted', async () => {
+  const { readXTrends, formatPosts } = await import('../lib/x-trends.mjs');
+  assert.equal(formatPosts(36926), '36.9K posts');
+  assert.equal(formatPosts(1200000), '1.2M posts');
+  assert.equal(formatPosts(950), '950 posts');
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const f = `${mkdtempSync(`${tmpdir()}/xt-`)}/x.json`;
+  writeFileSync(f, JSON.stringify({ updatedAt: new Date().toISOString(), items: [{ title: 'A', posts: 36926 }, { title: 'B', posts: '2K posts' }, { title: 'C', posts: null }] }));
+  const r = await readXTrends(f);
+  assert.equal(r.status, 'ready');
+  assert.deepEqual(r.items.map((i) => i.posts), ['36.9K posts', '2K posts', undefined]);
+});
