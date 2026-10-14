@@ -41,17 +41,38 @@ const PRI: Record<string, number> = { high: 3, medium: 2, low: 1, none: 0 };
  * process running the dashboard. If direct access is refused, retry through osascript, which
  * carries its own Reminders permission.
  */
-export async function readReminders(now = new Date(), exclude: string[] = []): Promise<TodoSource> {
+const ACCESS_NOTE = 'Reminders access is off for the dashboard service. On the Mac mini, allow its node binary under System Settings › Privacy & Security › Reminders, then restart the service.';
+/** Reminders reads can hang for a long time when macOS is holding an unseen permission prompt, so
+ * keep the last good answer for a minute and back off for 10 minutes after a failure. */
+let remCache: { at: number; out: string } | null = null;
+let remFail: { at: number; note: string } | null = null;
+async function remindersJson(): Promise<{ out: string } | { note: string }> {
+  const t = Date.now();
+  if (remCache && t - remCache.at < 60000) return remCache;
+  if (remFail && t - remFail.at < 600000) return remCache ?? remFail;
   const args = ['show', 'open', '--json', '--no-input'];
-  let r = await run(REMINDCTL, args);
+  let r = await run(REMINDCTL, args, 5000);
   if (!r.ok || !r.out.trim().startsWith('[')) {
-    if (/ENOENT|not found/i.test(r.err) && !r.out) return { status: 'unconnected', note: 'remindctl is not installed (brew install steipete/tap/remindctl).', groups: [] };
-    r = await run('/usr/bin/osascript', ['-e', `do shell script "${REMINDCTL} ${args.join(' ')}"`]);
+    if (/ENOENT|not found/i.test(r.err) && !r.out) return { note: 'unconnected' };
+    r = await run('/usr/bin/osascript', ['-e', `do shell script "${REMINDCTL} ${args.join(' ')}"`], 5000);
   }
   if (!r.ok || !r.out.trim().startsWith('[')) {
-    const denied = /access|authori[sz]|permission|denied/i.test(r.err + r.out);
-    return { status: 'error', note: denied ? 'Reminders access is off for the dashboard. Run `remindctl authorize` in Terminal on the Mac mini, then allow it under System Settings › Privacy & Security › Reminders.' : 'Reminders could not be read.', groups: [] };
+    const denied = /access|authori[sz]|permission|denied/i.test(r.err + r.out) || !r.out;
+    remFail = { at: t, note: denied ? ACCESS_NOTE : 'Reminders could not be read.' };
+    return remCache ?? remFail;
   }
+  remFail = null;
+  remCache = { at: t, out: r.out };
+  return remCache;
+}
+
+export async function readReminders(now = new Date(), exclude: string[] = []): Promise<TodoSource> {
+  const got = await remindersJson();
+  if ('note' in got) {
+    if (got.note === 'unconnected') return { status: 'unconnected', note: 'remindctl is not installed (brew install steipete/tap/remindctl).', groups: [] };
+    return { status: 'error', note: got.note, groups: [] };
+  }
+  const r = got;
   const parsed = z.array(rem).safeParse(JSON.parse(r.out));
   if (!parsed.success) return { status: 'error', note: 'Reminders answered in an unexpected shape.', groups: [] };
   const skip = new Set(exclude.map((s) => s.toLowerCase()));
