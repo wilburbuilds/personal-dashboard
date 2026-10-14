@@ -128,7 +128,8 @@ export function MarkdownNote({ body, refs = noRefs, compact = false, depth = 0, 
       void node;
       const t = textOf(children).trim();
       const numeric = /^[-+$€£]?[\d.,]+\s*(%|lb|kg|mi|km|min|sec|s|ms|bpm)?$/.test(t) || /^\d+\s*[×x]\s*[\d–-]+/.test(t);
-      return <td className={numeric || style?.textAlign === 'right' ? 'r' : undefined}>{markKids(children)}</td>;
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(t);
+      return <td className={numeric || style?.textAlign === 'right' ? 'r' : date ? 'nw' : undefined}>{markKids(children)}</td>;
     },
     th({ node, children, style }) { void node; return <th className={style?.textAlign === 'right' ? 'r' : undefined}>{children}</th>; },
     ul({ node, children, className: cn }) { void node; return <ul className={cn?.includes('contains-task-list') ? 'task' : undefined}>{children}</ul>; },

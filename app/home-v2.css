@@ -261,3 +261,7 @@ html.light .md pre .s{color:var(--ok-ink)}html.light .md pre .k{color:var(--viz-
  .hd .md h1{font-size:24px}
 }
 @media (prefers-reduced-motion:reduce){.he .hyp-draw{animation:none;clip-path:none}.t2-now{animation:none}}
+
+.md td.nw{white-space:nowrap}
+.q:not(:has(.q-hits li)) .q-panes{grid-template-columns:minmax(0,1fr)}
+.q:not(:has(.q-hits li)) .q-hits{display:none}
