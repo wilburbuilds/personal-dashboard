@@ -2,7 +2,8 @@ export type TabIdS = 'today' | 'projects' | 'systems' | 'budget' | 'health' | 'q
 export type Settings = {
   pages: { order: TabIdS[]; hidden: TabIdS[] };
   theme: 'system' | 'dark' | 'light'; webFonts: boolean;
-  today: { lead: 'rules' | 'off' };
+  today: { lead: 'rules' | 'off'; headlines: number; trends: number; positions: number; holdingsStaleHours: number };
+  todos: { excludeLists: string[]; vikunja: boolean };
   budget: { overThreshold: number; fixedCategories: string[]; billWindowDays: number };
   health: { tempUnit: 'C' | 'F'; badge: 'off' | 'stale'; logStatus: 'auto' | 'text'; staleLogDays: number };
   markdown: { checkboxes: 'readonly' | 'plain'; dataview: 'code' | 'hide' };

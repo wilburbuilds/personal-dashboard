@@ -4,11 +4,11 @@ import { homeEnv } from '@/lib/home-env.mjs';
 import { homeConfig } from '@/lib/home-config.mjs';
 import { isDemo, demoBoard } from '@/lib/demo/fixtures.mjs';
 
-const project = z.object({ id: z.number(), title: z.string(), is_archived: z.boolean().optional(), parent_project_id: z.number().optional() });
+export const project = z.object({ id: z.number(), title: z.string(), is_archived: z.boolean().optional(), parent_project_id: z.number().optional() });
 const view = z.object({ id: z.number(), title: z.string(), view_kind: z.string(), position: z.number().optional() });
 const label = z.object({ title: z.string(), hex_color: z.string().optional().default('') });
 const user = z.object({ username: z.string(), name: z.string().optional().default('') });
-const task = z.object({
+export const task = z.object({
   id: z.number(), identifier: z.string().optional().default(''), index: z.number().optional(), title: z.string(), done: z.boolean(),
   due_date: z.string().nullable().optional(), percent_done: z.number().optional().default(0), priority: z.number().optional().default(0),
   labels: z.array(label).nullable().optional(), assignees: z.array(user).nullable().optional(),
@@ -24,7 +24,7 @@ export type Board = {
 };
 
 /** The only HTTP verb this adapter can send is GET. Each request is logged. */
-async function vget<S extends z.ZodTypeAny>(path: string, schema: S, signal: AbortSignal): Promise<z.output<S>> {
+export async function vget<S extends z.ZodTypeAny>(path: string, schema: S, signal: AbortSignal): Promise<z.output<S>> {
   const { VIKUNJA_API_TOKEN: token, VIKUNJA_URL: base } = homeEnv();
   if (!token || !base) throw new Error('Vikunja token missing from ~/.config/home-dashboard/env');
   const res = await fetch(base + path, { method: 'GET', headers: { Authorization: `Bearer ${token}` }, signal, cache: 'no-store' });

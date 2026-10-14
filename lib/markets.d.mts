@@ -18,6 +18,8 @@ export type MarketPosition = {
   direction: 'up' | 'down';
   pct: string;
   dollars: string;
+  /** Implied market value in dollars (from today's move), or null. */
+  value: number | null;
   sparkline: { priorY: number | null; points: string; color: string } | null;
 };
 export type MarketsSource = {
@@ -26,8 +28,11 @@ export type MarketsSource = {
   strip: MarketStripQuote[];
   book: MarketBook | null;
   positions: MarketPosition[];
+  /** When the holdings file was last written (ISO), or null. */
+  holdingsAt?: string | null;
   note: string;
 };
+export function impliedValue(pct: string, dollars: string): number | null;
 export function fetchYahooQuote(symbol: string): Promise<{
   symbol: string;
   last: number;

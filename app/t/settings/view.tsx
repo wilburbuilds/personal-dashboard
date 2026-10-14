@@ -92,7 +92,7 @@ export default function SettingsView({ settings: initial, defaults, prefs: initi
 
   const sections: { id: string; title: string; icon?: ReactNode; sec: SettingsSection; resetKey?: string }[] = [
     { id: 'appearance', title: global.title!, sec: global },
-    ...order.map((id) => byId[id]).filter((p) => p?.section).map((p) => ({ id: p.id, title: p.title, icon: p.icon, sec: p.section!, resetKey: p.id === 'today' ? 'today' : p.id })),
+    ...order.map((id) => byId[id]).filter((p) => p?.section).map((p) => ({ id: p.id, title: p.title, icon: p.icon, sec: p.section!, resetKey: p.id === 'projects' ? 'todos' : p.id })),
     { id: 'notes', title: markdown.title!, sec: markdown, resetKey: 'markdown' },
   ];
 

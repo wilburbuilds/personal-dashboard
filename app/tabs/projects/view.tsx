@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Lock, ExternalLink, CalendarClock } from 'lucide-react';
 import type { Board, Task } from '@/lib/sources/vikunja';
+import type { Todos } from '@/lib/sources/todos';
+import { TodoLists } from '@/components/home/todos';
 import { timeLabel } from '@/components/home/ui';
 
 const fmtDue = (iso: string) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' }).format(new Date(iso));
@@ -25,7 +27,7 @@ function Card({ t, now }: { t: Task; now: number }) {
   );
 }
 
-export default function ProjectsView({ data, fetchedAt }: { data: Board; fetchedAt: Date }) {
+export default function ProjectsView({ data, fetchedAt }: { data: Board & { todos?: Todos }; fetchedAt: Date }) {
   const [mode, setMode] = useState<'board' | 'list'>('board');
   const [bucket, setBucket] = useState(0);
   const [now] = useState(() => Date.now());
@@ -80,6 +82,7 @@ export default function ProjectsView({ data, fetchedAt }: { data: Board; fetched
           </table>
         </div>
       )}
+      {data.todos ? <TodoLists todos={data.todos} /> : null}
     </main>
   );
 }

@@ -1,5 +1,6 @@
 import { readHeadlineSource } from '@/lib/headline-source';
 import { readMarketsSource } from '@/lib/markets.mjs';
+import { readXTrends } from '@/lib/x-trends.mjs';
 import { readWorkoutSource } from '@/lib/workout.mjs';
 import { readWorkouts } from '@/lib/workouts.mjs';
 import { homeConfig } from '@/lib/home-config.mjs';
@@ -21,7 +22,7 @@ import { isDemo, demoDashboard } from '@/lib/demo/fixtures.mjs';
 export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'private, no-store' };
 export async function GET() {
-  if (isDemo()) return Response.json(demoDashboard(), { headers });
+  if (isDemo()) return Response.json({ ...(demoDashboard() as object), xTrends: await readXTrends() }, { headers });
   try {
     const snapshot = (await readRecord('snapshot')) ?? emptySnapshot();
     const preferences = (await readRecord('preferences')) ?? defaultPreferences;
@@ -39,6 +40,7 @@ export async function GET() {
         readWorkoutSource(),
         readWorkouts(homeConfig.health.vault).catch(() => null),
       ]);
+    const xTrends = await readXTrends();
     const tonight = program?.tonight ? { title: program.tonight.title, time: program.tonight.time, duration: program.tonight.duration } : null;
     snapshot.sources.health = health;
     snapshot.sources.weather = weather;
@@ -74,7 +76,7 @@ export async function GET() {
         note: 'Receiver ready. Waiting for your first HomePod reading.',
         items: [],
       };
-    return Response.json({ snapshot, homeRooms: rooms, preferences, markets, workout, tonight }, { headers });
+    return Response.json({ snapshot, homeRooms: rooms, preferences, markets, workout, tonight, xTrends }, { headers });
   } catch {
     return Response.json(
       { error: 'Your dashboard could not be loaded. Try again shortly.' },
