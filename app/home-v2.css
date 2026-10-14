@@ -612,3 +612,4 @@ html.light .md pre .s{color:var(--ok-ink)}html.light .md pre .k{color:var(--viz-
 .pd-meta{font-size:12px;margin:0}
 .pd-foot{padding:14px 22px;border-top:1px solid var(--h-border);display:flex;justify-content:flex-end}
 @media (max-width:640px){.pv-grid{grid-template-columns:1fr}.pd-facts{grid-template-columns:100px 1fr}.pb-help{display:none}}
+@media (max-width:640px){.pb-parent{display:block;font-size:13px;margin-top:2px}.pb .hd-top h1{line-height:1.2}}
