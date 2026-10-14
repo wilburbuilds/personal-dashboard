@@ -23,7 +23,8 @@
     "test:overnight-curate": "node --test tests/overnight-curate.test.mjs",
     "test:headlines-curate": "node --test tests/headlines-curate.test.mjs",
     "budget:sync": "node scripts/budget-sync.mjs",
-    "service:install-budget-sync": "node scripts/install-budget-sync.mjs"
+    "service:install-budget-sync": "node scripts/install-budget-sync.mjs",
+    "demo": "node scripts/demo.mjs"
   },
   "dependencies": {
     "@actual-app/api": "^26.10.0",

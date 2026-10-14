@@ -8,6 +8,7 @@ let lastStart = 0;
 /** Refreshes the dashboard's read cache from Actual. Nothing is written to Actual. */
 export async function POST(request: Request) {
   if (!validOrigin(request)) return Response.json({ error: 'Invalid origin' }, { status: 403 });
+  if (process.env.HD_DEMO === '1') return Response.json({ ok: true, note: 'Demo mode' });
   if (!running) {
     if (Date.now() - lastStart < 30000) return Response.json({ ok: true, note: 'Synced moments ago' });
     lastStart = Date.now();

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { appendFile } from 'node:fs/promises';
 import { homeEnv } from '@/lib/home-env.mjs';
 import { homeConfig } from '@/lib/home-config.mjs';
+import { isDemo, demoBoard } from '@/lib/demo/fixtures.mjs';
 
 const project = z.object({ id: z.number(), title: z.string(), is_archived: z.boolean().optional(), parent_project_id: z.number().optional() });
 const view = z.object({ id: z.number(), title: z.string(), view_kind: z.string(), position: z.number().optional() });
@@ -40,6 +41,7 @@ const toTask = (t: z.infer<typeof task>): Task => ({
 });
 
 export async function loadBoard(projectId: number, signal: AbortSignal): Promise<Board> {
+  if (isDemo()) return demoBoard();
   const projects = (await vget('/projects', z.array(project), signal)).filter((p) => !p.is_archived && p.id > 0);
   const current = projects.find((p) => p.id === projectId) ?? projects[0];
   if (!current) throw new Error('No Vikunja projects visible to the bot');
