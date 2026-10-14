@@ -15,11 +15,14 @@ const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono', display: 
 export const metadata: Metadata = {
   title: 'Home',
   description: 'Your private household dashboard: today, projects, systems, budget, and notes.',
-  icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
+  icons: {
+    icon: [{ url: '/favicon.ico', sizes: '48x48' }, { url: '/favicon.svg', type: 'image/svg+xml' }],
+    apple: '/apple-touch-icon.png',
+  },
 };
 export const viewport: Viewport = {
   viewportFit: 'cover',
-  themeColor: [{ media: '(prefers-color-scheme: dark)', color: '#0B0E0D' }, { media: '(prefers-color-scheme: light)', color: '#CFD7D4' }],
+  themeColor: [{ media: '(prefers-color-scheme: dark)', color: '#0F1312' }, { media: '(prefers-color-scheme: light)', color: '#DDE3E1' }],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
