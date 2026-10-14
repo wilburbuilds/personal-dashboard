@@ -22,7 +22,7 @@ async function refresh() {
 }
 
 const systems: TabPlugin<Systems> = {
-  id: 'systems', title: 'Systems', icon: Activity, order: 3, status: 'beta', refreshSeconds: 60,
+  id: 'systems', title: 'Systems', icon: Activity, order: 3, status: 'live', refreshSeconds: 60,
   async load({ now }) {
     const age = last ? now.getTime() - last.at : Infinity;
     if (age > 20000) {

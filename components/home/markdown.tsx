@@ -143,6 +143,7 @@ export function MarkdownNote({ body, refs = noRefs, compact = false, depth = 0, 
     input({ node, checked, type }) {
       void node;
       if (type !== 'checkbox') return null;
+      if (settings.checkboxes === 'plain') return null;
       // Read-only by design (homeConfig.markdown.checkboxes = 'readonly').
       return <span data-cb="" className={`cb${checked ? ' on' : ''}`} role="checkbox" aria-checked={!!checked} aria-readonly="true" aria-label={checked ? 'Done' : 'Not done'}>{checked ? <Check aria-hidden /> : null}</span>;
     },

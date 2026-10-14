@@ -19,7 +19,7 @@ const statusSchema = z.object({ ok: z.boolean(), error: z.string().optional(), f
 export type BudgetData = ReturnType<typeof buildBudgetView> & { actualURL: string; syncError: string | null; staleCache: boolean };
 
 const budget: TabPlugin<BudgetData> = {
-  id: 'budget', title: 'Budget', icon: Wallet, order: 4, status: 'beta', refreshSeconds: 300,
+  id: 'budget', title: 'Budget', icon: Wallet, order: 4, status: 'live', refreshSeconds: 300,
   async load({ now }) {
     let raw: string;
     try { raw = await readFile(join(homeConfig.dataDir, 'budget.json'), 'utf8'); } catch {
@@ -36,6 +36,14 @@ const budget: TabPlugin<BudgetData> = {
     return ok({ ...view, actualURL: homeConfig.actual.publicURL, syncError, staleCache }, new Date(cache.fetchedAt));
   },
   View: BudgetView,
+  settings: {
+    description: 'Read-only view of Actual Budget.',
+    fields: [
+      { key: 'budget.overThreshold', label: 'Over-pace threshold', help: 'How far past pace a category goes before it turns red.', type: 'percent', min: 0, max: 0.5, step: 0.01 },
+      { key: 'budget.fixedCategories', label: 'Bill categories', help: 'Fixed costs. Kept out of pace and tracked as bills.', type: 'tags' },
+      { key: 'budget.billWindowDays', label: 'Remind about bills due within', type: 'number', min: 1, max: 31, step: 1, unit: 'days' },
+    ],
+  },
   attention: (d) => {
     const n = d.actions.filter((a) => a.tone === 'over' || a.tone === 'warn').length;
     return n ? { count: n, tone: d.actions.some((a) => a.tone === 'over') ? 'over' : 'warn' } : null;

@@ -67,3 +67,6 @@ systems-history.json
 query.db*
 gym-inbox.md
 /demo-data/
+
+# local UI settings (lives in ~/.config/home-dashboard)
+settings.json

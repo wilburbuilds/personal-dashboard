@@ -17,7 +17,7 @@ const WXWORD = { sun: 'Sunny', cloud: 'Cloudy', rain: 'Rain', snow: 'Snow', stor
 const clock = (d: Date | string) => new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TZ }).format(new Date(d));
 const NAMES: Partial<Record<(typeof keys)[number], string>> = { discord: 'Discord', home: 'Home Assistant', automations: 'scheduled tasks', calendar: 'calendar', overnight: 'overnight mail', followups: 'follow-ups', headlines: 'headlines', health: 'Fitbit', weather: 'weather' };
 
-export default function TodayV2() {
+export default function TodayV2({ data: cfg }: { data?: { lead: 'rules' | 'off' }; fetchedAt?: Date }) {
   const [data, setData] = useState<Snapshot>(emptySnapshot);
   const [prefs, setPrefs] = useState<Preferences>(defaultPreferences);
   const [draft, setDraft] = useState<Preferences>(defaultPreferences);
@@ -81,7 +81,8 @@ export default function TodayV2() {
   const WIcon = weather ? WX[weather.condition] : Cloud;
   const day = now ? buildDay(s.calendar?.items ?? [], tonight, now) : null;
   const replies = s.overnight?.status === 'ready' ? s.overnight.items : [];
-  const lead = day ? leadSentence(day, replies[0]?.title ?? null) : null;
+  const leadOn = (cfg?.lead ?? 'rules') !== 'off';
+  const lead = day && leadOn ? leadSentence(day, replies[0]?.title ?? null) : null;
   const health = s.health;
   const metric = (label: RegExp) => health?.metrics?.find((m) => label.test(m.label));
   const unconnected = keys.filter((k) => s[k]?.status === 'unconnected' && NAMES[k]).map((k) => NAMES[k]!);
@@ -92,7 +93,7 @@ export default function TodayV2() {
       <header className="t2-hdr">
         <div>
           <p className="t2-date">{date}</p>
-          <h1 className="t2-lead">{lead ?? (loaded ? 'Here’s today.' : <span className="hd-skel" style={{ height: 34, width: '28ch' }} />)}</h1>
+          <h1 className="t2-lead">{lead ?? (loaded || !leadOn ? 'Here’s today.' : <span className="hd-skel" style={{ height: 34, width: '28ch' }} />)}</h1>
         </div>
         <button className="t2-wx" onClick={() => { setDraft(prefs); setOpen(true); }} aria-label="Weather and preferences">
           <WIcon aria-hidden />

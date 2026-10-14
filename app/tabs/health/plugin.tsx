@@ -53,12 +53,21 @@ const health: TabPlugin<HealthData> = {
     const s = d.overview?.current?.sleep?.asleep;
     return s ? `Slept ${Math.floor(s / 60)}h ${String(Math.round(s % 60)).padStart(2, '0')}m` : 'Fitbit and workouts';
   },
-  ...((cfg.badge as boolean | string) === 'stale' ? {
-    attention(d: HealthData) {
-      const c = d.overview?.current;
-      const syncOld = !c?.fetchedAt || Date.now() - Date.parse(c.fetchedAt) > 36 * 3600e3;
-      return syncOld ? { count: 1, tone: 'warn' as const } : null;
-    },
-  } : {}),
+  attention(d: HealthData) {
+    if ((cfg.badge as boolean | string) !== 'stale') return null;
+    const c = d.overview?.current;
+    const syncOld = !c?.fetchedAt || Date.now() - Date.parse(c.fetchedAt) > 36 * 3600e3;
+    const logOld = !!d.workouts?.stale;
+    return syncOld || logOld ? { count: 1, tone: 'warn' as const } : null;
+  },
+  settings: {
+    description: 'Fitbit overview and workouts.',
+    fields: [
+      { key: 'health.tempUnit', label: 'Skin temperature unit', type: 'segmented', options: [{ value: 'C', label: '°C' }, { value: 'F', label: '°F' }] },
+      { key: 'health.badge', label: 'Nav badge', help: 'Badge Health when Fitbit hasn’t synced in 36 hours or the training log is stale.', type: 'segmented', options: [{ value: 'off', label: 'Off' }, { value: 'stale', label: 'When stale' }] },
+      { key: 'health.logStatus', label: 'Training log status', help: 'Auto uses a Status column when the log has one; Text always reads it from the notes.', type: 'segmented', options: [{ value: 'auto', label: 'Auto' }, { value: 'text', label: 'From text' }] },
+      { key: 'health.staleLogDays', label: 'Flag the log as stale after', type: 'number', min: 1, max: 60, step: 1, unit: 'days' },
+    ],
+  },
 };
 export default health;

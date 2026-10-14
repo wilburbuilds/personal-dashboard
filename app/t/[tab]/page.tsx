@@ -1,4 +1,3 @@
-import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { findTab, loadTab, visibleTabs } from '@/app/tabs/registry';
 import { PanelError } from '@/components/home/ui';
@@ -7,9 +6,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function TabPage({ params, searchParams }: { params: Promise<{ tab: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { tab } = await params;
-  const beta = (await cookies()).get('hd-beta')?.value === '1';
   const plugin = findTab(tab);
-  if (!plugin || !visibleTabs(beta).includes(plugin)) notFound();
+  if (!plugin || !visibleTabs().includes(plugin)) notFound();
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(await searchParams)) if (typeof v === 'string' && k !== 'beta') sp.set(k, v);
   const result = await loadTab(plugin.id, sp.toString());

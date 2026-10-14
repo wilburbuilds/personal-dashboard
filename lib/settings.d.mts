@@ -1,0 +1,19 @@
+export type TabIdS = 'today' | 'projects' | 'systems' | 'budget' | 'health' | 'query';
+export type Settings = {
+  pages: { order: TabIdS[]; hidden: TabIdS[] };
+  theme: 'system' | 'dark' | 'light'; webFonts: boolean;
+  today: { lead: 'rules' | 'off' };
+  budget: { overThreshold: number; fixedCategories: string[]; billWindowDays: number };
+  health: { tempUnit: 'C' | 'F'; badge: 'off' | 'stale'; logStatus: 'auto' | 'text'; staleLogDays: number };
+  markdown: { checkboxes: 'readonly' | 'plain'; dataview: 'code' | 'hide' };
+  query: { scope: string[] };
+};
+export declare const TAB_IDS: TabIdS[];
+export declare const DEFAULTS: Settings;
+export declare function settingsPath(): string;
+export declare function getSettings(): Settings;
+export declare function settingsError(): string | null;
+export declare function saveSettings(patch: unknown): { ok: true; settings: Settings } | { ok: false; error: string };
+export declare function resetSettings(section?: string): { ok: true; settings: Settings } | { ok: false; error: string };
+export declare function visibleTabIds(): TabIdS[];
+export declare function vaultChoices(): { value: string; label: string }[];

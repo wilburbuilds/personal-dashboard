@@ -2,6 +2,7 @@ import { cache } from 'react';
 import { appendFile } from 'node:fs/promises';
 import type { TabPlugin, TabId, LoadCtx, SourceResult } from './types';
 import { homeConfig } from '@/lib/home-config.mjs';
+import { getSettings, visibleTabIds } from '@/lib/settings.mjs';
 import today from './today/plugin';
 import projects from './projects/plugin';
 import systems from './systems/plugin';
@@ -13,9 +14,11 @@ import query from './query/plugin';
 export const tabs: TabPlugin<any>[] = [today, projects, systems, budget, health, query].sort((a, b) => a.order - b.order);
 
 export const findTab = (id: string) => tabs.find((t) => t.id === id);
-export const visibleTabs = (beta: boolean) => tabs.filter((t) => t.status === 'live' || (beta && t.status === 'beta'));
+/** Tabs in the user's order, minus hidden ones (Settings > Pages). The old beta gate is gone. */
+export const visibleTabs = () => visibleTabIds().map((id) => findTab(id)).filter((t): t is TabPlugin<any> => !!t && t.status !== 'hidden'); // eslint-disable-line @typescript-eslint/no-explicit-any
 
 async function timedLoad(id: TabId, search: string): Promise<SourceResult<unknown>> {
+  getSettings();
   const plugin = findTab(id)!;
   const ctx: LoadCtx = { now: new Date(), signal: AbortSignal.timeout(8000), params: new URLSearchParams(search) };
   const t0 = performance.now();

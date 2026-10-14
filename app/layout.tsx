@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Familjen_Grotesk, Hanken_Grotesk, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
-import { homeConfig } from '@/lib/home-config.mjs';
+import { getSettings } from '@/lib/settings.mjs';
+
+export const dynamic = 'force-dynamic';
 import './globals.css';
 import './home.css';
 import './home-v2.css';
@@ -21,11 +23,12 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const fonts = homeConfig.webFonts ? `${display.variable} ${ui.variable} ${mono.variable}` : '';
+  const st = getSettings();
+  const fonts = st.webFonts ? `${display.variable} ${ui.variable} ${mono.variable}` : '';
   return (
     <html lang="en" className={fonts} suppressHydrationWarning>
       <body className="antialiased">
-        <ThemeProvider attribute="class" defaultTheme={homeConfig.theme} enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" storageKey="hd-theme-v4" defaultTheme="system" forcedTheme={st.theme === 'system' ? undefined : st.theme} enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>
       </body>
