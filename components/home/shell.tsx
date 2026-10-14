@@ -80,8 +80,11 @@ export function Shell({ items, beta, phoneTabs, children }: { items: NavItem[]; 
         return;
       }
       if (e.key === 'Escape' && help) { e.preventDefault(); setHelp(false); return; }
+      // Query autofocuses its one-line search box; let Opt+Up/Down still switch tabs from there.
+      const tabArrows = e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown');
+      if (tabArrows && (!typing || t.hasAttribute('data-search'))) { e.preventDefault(); go(curIdx() + (e.key === 'ArrowUp' ? -1 : 1)); return; }
+      if (e.key === 'Escape' && typing && t.hasAttribute('data-search')) { t.blur(); return; }
       if (typing || e.metaKey || e.ctrlKey) return;
-      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); go(curIdx() + (e.key === 'ArrowUp' ? -1 : 1)); return; }
       if (e.altKey) return;
       if (e.key === '?') { e.preventDefault(); setHelp((h) => !h); return; }
       if (e.key === '/') {
