@@ -2,6 +2,6 @@
   "client_id": "",
   "client_secret": "",
   "redirect_uri": "http://127.0.0.1:8766/oauth/callback",
-  "token_path": "~/.config/personal-dashboard/tokens.json",
-  "_comment": "Copy to ~/.config/personal-dashboard/oauth.json (mode 0600). Never commit real values. Account: your personal Google account only. Port 8766 avoids colliding with fitbit-air-ingest on 8765. Scopes via npm run oauth:google: calendar.readonly + gmail.readonly."
+  "token_path": "~/.config/home-dashboard/google/tokens.json",
+  "_comment": "Copy to ~/.config/home-dashboard/google/oauth.json (mode 0600). Never commit real values. Scopes via npm run oauth:google: calendar.readonly + gmail.readonly."
 }

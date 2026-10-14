@@ -174,7 +174,7 @@ const ST: Record<WeekDay['status'], [typeof Circle | null, string, string]> = {
 
 function WorkoutsView({ data }: { data: HealthData }) {
   const w = data.workouts!;
-  if (!w.found?.program) return <p className="hd-empty">fitness/current-program.md was not found in personal.</p>;
+  if (!w.found?.program) return <p className="hd-empty">fitness/current-program.md was not found in the personal vault.</p>;
   const t = w.tonight;
   const morning = !!t?.time && /AM$/.test(t.time);
   const dur = t?.duration ? (t.duration.length > 1 ? `${t.duration[0]} to ${t.duration[1]} minutes` : `about ${t.duration[0]} minutes`) : null;
@@ -303,7 +303,7 @@ function NoteView({ data }: { data: HealthData }) {
     <>
       <div className="he-note-head">
         <Link className="hd-btn ghost small" href="/t/health?view=workouts"><ArrowLeft aria-hidden className="hd-i" />Workouts</Link>
-        {n ? <span className="q-path"><FileText aria-hidden className="hd-i" />personal/{n.path}</span> : null}
+        {n ? <span className="q-path"><FileText aria-hidden className="hd-i" />{n.vault}/{n.path}</span> : null}
       </div>
       <article className="hd-panel mdp" aria-label="Note">
         {n ? <><h2 className="mdp-title">{n.path.split('/').pop()!.replace(/\.md$/, '')}</h2><MarkdownNote body={n.body} refs={n.refs} settings={data.md} /></> : <p className="hd-empty">That note isn&apos;t in the fitness folder.</p>}

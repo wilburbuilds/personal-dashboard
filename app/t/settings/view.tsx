@@ -156,7 +156,7 @@ export default function SettingsView({ settings: initial, defaults, prefs: initi
               </div>
             </section>
           ))}
-          <p className="st-foot">Saved on the Mac mini in <code>~/.config/home-dashboard/settings.json</code>, layered over <code>lib/home-config.mjs</code>. <button className="hd-linkish" onClick={() => reset()}>Reset everything</button></p>
+          <p className="st-foot">Saved in <code>~/.config/home-dashboard/settings.json</code>, layered over <code>lib/home-config.mjs</code>. <button className="hd-linkish" onClick={() => reset()}>Reset everything</button></p>
         </div>
       </div>
     </main>

@@ -1,4 +1,6 @@
 import { validOrigin } from '@/lib/request-origin';
+import { homedir } from 'node:os';
+import { relative } from 'node:path';
 import { homeConfig } from '@/lib/home-config.mjs';
 import { homeEnv } from '@/lib/home-env.mjs';
 import { appendInbox, postWebhook, WORKOUT_DIR, WriteError } from '@/lib/workout-note.mjs';
@@ -12,7 +14,7 @@ export async function POST(request: Request) {
   if (!b || typeof b.text !== 'string') return Response.json({ error: 'Bad request' }, { status: 400 });
   try {
     const saved = await appendInbox(homeConfig.health.vault, b.text);
-    const workoutNote = `~/vaults/personal/${WORKOUT_DIR}/${pacificDay()}.md`;
+    const workoutNote = `~/${relative(homedir(), homeConfig.health.vault)}/${WORKOUT_DIR}/${pacificDay()}.md`;
     const hook = await postWebhook(homeEnv(true), { text: saved.text, at: saved.at, workoutNote });
     return Response.json({ ok: true, saved: true, sent: hook.sent, webhook: hook.skipped ? 'unset' : hook.sent ? 'ok' : 'failed', at: saved.at });
   } catch (e) {

@@ -72,8 +72,8 @@ await writeFile(
 <key>StartCalendarInterval</key><array>
 ${intervals}
 </array>
-<key>StandardOutPath</key><string>${xml(join(logDir, 'personal-dashboard-overnight-curate.out.log'))}</string>
-<key>StandardErrorPath</key><string>${xml(join(logDir, 'personal-dashboard-overnight-curate.err.log'))}</string>
+<key>StandardOutPath</key><string>${xml(join(logDir, 'home-dashboard-overnight-curate.out.log'))}</string>
+<key>StandardErrorPath</key><string>${xml(join(logDir, 'home-dashboard-overnight-curate.err.log'))}</string>
 </dict></plist>`,
   { mode: 0o600 },
 );

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Local loopback OAuth for personal Google Calendar + Gmail (your personal Google account only).
- * Reads ~/.config/personal-dashboard/oauth.json, opens consent, captures code on
+ * Local loopback OAuth for personal Google Calendar + Gmail.
+ * Reads ~/.config/home-dashboard/google/oauth.json, opens consent, captures code on
  * http://127.0.0.1:8766/oauth/callback, writes tokens.json (mode 0600).
  * Scopes: calendar.readonly + gmail.readonly (prompt=consent so refresh gains new scopes).
- * Do not commit oauth.json or tokens. Never use a work account.
+ * Do not commit oauth.json or tokens.
  */
 import { createServer } from 'node:http';
 import { readFile, mkdir, writeFile, chmod } from 'node:fs/promises';
@@ -24,7 +24,7 @@ async function loadOAuth() {
     raw = await readFile(path, 'utf8');
   } catch {
     console.error(`Missing ${path}`);
-    console.error('Copy google-oauth.example.json → ~/.config/personal-dashboard/oauth.json and paste client_id / client_secret.');
+    console.error('Copy google-oauth.example.json → ~/.config/home-dashboard/google/oauth.json and paste client_id / client_secret.');
     process.exit(1);
   }
   const cfg = JSON.parse(raw);
@@ -121,12 +121,12 @@ async function main() {
     prompt: 'consent',
     include_granted_scopes: 'true',
     state,
-    // Hint personal account; user must still pick your personal Google account
-    login_hint: 'your personal Google account',
+    // Optional account hint (GOOGLE_ACCOUNT_HINT); the user still picks the account.
+    ...(process.env.GOOGLE_ACCOUNT_HINT ? { login_hint: process.env.GOOGLE_ACCOUNT_HINT } : {}),
   });
   const authUrl = `${AUTH_URL}?${params}`;
 
-  console.log('Account must be your personal Google account (never a work account).');
+  if (process.env.GOOGLE_ACCOUNT_HINT) console.log(`Sign in as ${process.env.GOOGLE_ACCOUNT_HINT}.`);
   console.log('Opening browser for Google consent…');
   console.log(`(If it does not open: ${authUrl})`);
 
@@ -150,7 +150,7 @@ async function main() {
   const saved = {
     ...tokens,
     obtained_at: new Date().toISOString(),
-    account_hint: 'your personal Google account',
+    account_hint: process.env.GOOGLE_ACCOUNT_HINT || null,
   };
   await saveTokens(saved, oauth.token_path);
   try {

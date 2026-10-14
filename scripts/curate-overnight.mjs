@@ -110,7 +110,7 @@ async function main() {
   let tokens = await loadTokens(tokenFile);
 
   if (!oauth || !tokens?.refresh_token) {
-    console.error('Gmail OAuth not configured. See GOOGLE.md (your personal Google account only).');
+    console.error('Gmail OAuth not configured. See README (Google sources).');
     process.exit(2);
   }
   if (!tokenHasGmailScope(tokens)) {

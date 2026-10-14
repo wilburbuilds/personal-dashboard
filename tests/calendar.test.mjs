@@ -98,7 +98,7 @@ test('readCalendarSource is unconnected without local oauth secrets', async () =
     const s = await readCalendarSource(now);
     assert.equal(s.status, 'unconnected');
     assert.equal(s.items.length, 0);
-    assert.match(s.note, /your personal Google account/);
+    assert.match(s.note, /personal Google account/);
   } finally {
     if (prevO === undefined) delete process.env.DASHBOARD_GOOGLE_OAUTH;
     else process.env.DASHBOARD_GOOGLE_OAUTH = prevO;

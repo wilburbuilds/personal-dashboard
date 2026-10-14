@@ -1,6 +1,6 @@
 #!/bin/bash
 # Rank overnight mail candidates via Grok Build CLI (stdin prompt → stdout JSON).
-# Requires ~/.grok/bin/grok logged in. Same flags as memo-ingest/scripts/grok-summarize.sh.
+# Requires ~/.grok/bin/grok logged in.
 set -euo pipefail
 GROK="${GROK_BIN:-$HOME/.grok/bin/grok}"
 if [[ ! -x "$GROK" ]]; then

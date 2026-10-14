@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { join, normalize } from 'node:path';
 import type { TabPlugin } from '../types';
 import { ok } from '../types';
-import { homeConfig } from '@/lib/home-config.mjs';
+import { homeConfig, personalVaultId } from '@/lib/home-config.mjs';
 import { buildOverview, readFitbitBundles, type Overview } from '@/lib/health-data.mjs';
 import { readWorkouts, type Workouts } from '@/lib/workouts.mjs';
 import { readDayNote, type DayNote } from '@/lib/workout-note.mjs';
@@ -16,7 +16,7 @@ export type HealthData = {
   overview: Overview | null;
   workouts: (Workouts & { refs: Refs }) | null;
   dayNote: DayNote | null;
-  note: { path: string; body: string; refs: Refs } | null;
+  note: { path: string; body: string; refs: Refs; vault: string } | null;
   tempUnit: 'C' | 'F';
   md: { checkboxes: string; dataview: string };
   now: string;
@@ -34,7 +34,7 @@ async function load(params: URLSearchParams): Promise<HealthData> {
     const rel = normalize(params.get('path') || 'training-log.md').replace(/^(\.\.(\/|$))+/, '');
     if (!rel.endsWith('.md') || rel.includes('..')) return { ...base, note: null };
     const body = await readFile(join(cfg.vault, 'fitness', rel), 'utf8').catch(() => null);
-    return { ...base, note: body === null ? null : { path: `fitness/${rel}`, body, refs: resolveRefs(body, 'personal') } };
+    return { ...base, note: body === null ? null : { path: `fitness/${rel}`, body, refs: resolveRefs(body, personalVaultId()), vault: personalVaultId() } };
   }
   const bundles = await readFitbitBundles(cfg.vault, now, cfg.trendDays).catch(() => ({}));
   const overview = buildOverview(bundles, now, cfg.trendDays);
@@ -42,7 +42,7 @@ async function load(params: URLSearchParams): Promise<HealthData> {
   const w = await readWorkouts(cfg.vault, now, { logStatus: cfg.logStatus, staleLogDays: cfg.staleLogDays });
   const text = w.log.map((r) => `${r.results}\n${r.notes}`).join('\n');
   const dayNote = await readDayNote(cfg.vault, w.today).catch(() => null);
-  return { ...base, overview, dayNote, workouts: { ...w, refs: resolveRefs(text, 'personal') } };
+  return { ...base, overview, dayNote, workouts: { ...w, refs: resolveRefs(text, personalVaultId()) } };
 }
 
 const health: TabPlugin<HealthData> = {

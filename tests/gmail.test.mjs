@@ -156,7 +156,7 @@ test('readGmailSources is unconnected without local oauth secrets', async () => 
     const { overnight, followups } = await readGmailSources(morning);
     assert.equal(overnight.status, 'unconnected');
     assert.equal(followups.status, 'unconnected');
-    assert.match(overnight.note, /your personal Google account/);
+    assert.match(overnight.note, /personal Google account/);
   } finally {
     if (prevO === undefined) delete process.env.DASHBOARD_GOOGLE_OAUTH;
     else process.env.DASHBOARD_GOOGLE_OAUTH = prevO;

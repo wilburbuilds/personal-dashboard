@@ -70,3 +70,14 @@ gym-inbox.md
 
 # local UI settings (lives in ~/.config/home-dashboard)
 settings.json
+
+# private local files
+scripts/.import-*.json
+scripts/actual-import.mjs
+HANDOFF.md
+GOOGLE.md
+CALENDAR.md
+UPDATE.md
+AGENT_HEADLINES_PROMPT.md
+docs/SOURCES.md
+.npmrc
