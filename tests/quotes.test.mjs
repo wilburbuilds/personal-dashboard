@@ -43,11 +43,11 @@ import { join } from 'node:path';
 test('holdings rank file: order only, validated, falls back to saved order', async () => {
   const f = join(mkdtempSync(join(tmpdir(), 'hd-rank-')), 'r.json');
   assert.equal(await readTickerRank(f), null);
-  writeFileSync(f, JSON.stringify({ updatedAt: new Date().toISOString(), tickers: ['mu', 'SPY', 'bad ticker', 'MU'], values: [1, 2] }));
+  writeFileSync(f, JSON.stringify({ updatedAt: new Date().toISOString(), tickers: ['msft', 'SPY', 'bad ticker', 'MSFT'], values: [1, 2] }));
   const r = await readTickerRank(f);
-  assert.deepEqual(r.tickers, ['MU', 'SPY']);
-  assert.deepEqual(orderTickers(['SPY', 'KNCT', 'MU'], r), ['MU', 'SPY', 'KNCT']);
-  assert.deepEqual(orderTickers(['SPY', 'KNCT'], null), ['SPY', 'KNCT']);
-  writeFileSync(f, JSON.stringify({ updatedAt: '2020-01-01T00:00:00Z', tickers: ['MU'] }));
+  assert.deepEqual(r.tickers, ['MSFT', 'SPY']);
+  assert.deepEqual(orderTickers(['SPY', 'AAPL', 'MSFT'], r), ['MSFT', 'SPY', 'AAPL']);
+  assert.deepEqual(orderTickers(['SPY', 'AAPL'], null), ['SPY', 'AAPL']);
+  writeFileSync(f, JSON.stringify({ updatedAt: '2020-01-01T00:00:00Z', tickers: ['MSFT'] }));
   assert.equal(await readTickerRank(f), null);
 });
