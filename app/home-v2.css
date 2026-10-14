@@ -275,7 +275,7 @@ html.light .md pre .s{color:var(--ok-ink)}html.light .md pre .k{color:var(--viz-
 @media (prefers-reduced-motion:reduce){.hd-mic.on{animation:none}}
 .hd-micfield{position:relative;display:block}
 .hd-micfield>input,.hd-micfield>textarea{width:100%;padding-right:40px}
-.hd-micfield>.hd-mic{position:absolute;right:5px;top:5px}
+
 .hd-palette-in .hd-mic{margin-right:-4px}
 .hd-pk{margin-left:auto;font:500 11px var(--f-mono,ui-monospace);color:var(--text-3);padding:1px 6px;border:1px solid var(--border);border-radius:5px;white-space:nowrap}
 [cmdk-item] small+.hd-pk{margin-left:8px}
@@ -316,3 +316,8 @@ html.light .md pre .s{color:var(--ok-ink)}html.light .md pre .k{color:var(--viz-
 .he .gym h2{display:flex;align-items:center;gap:8px}
 @media (max-width:640px){.he .wd-sec label{grid-template-columns:22px minmax(0,1fr) auto}.he .wd-sec .st{display:none}.hd-help dl>div{grid-template-columns:1fr}}
 .hd-help .hd-ph .hd-btn{margin-left:auto}
+/* v3.1 mic: always shown, more visible, failure tip */
+.hd-micwrap{position:relative;display:inline-flex;flex:none}
+.hd-micfield>.hd-micwrap{position:absolute;right:5px;top:5px}
+.hd-mic{color:var(--text-2);background:color-mix(in oklab,var(--text) 6%,transparent);border:1px solid var(--border)}
+.hd-mic-tip{position:absolute;right:0;top:calc(100% + 6px);z-index:90;width:max-content;max-width:260px;padding:8px 10px;border-radius:8px;background:var(--h-surface,#222);border:1px solid var(--h-border-strong,var(--border));box-shadow:var(--sh-2);color:var(--text);font:400 12.5px/1.4 var(--f-ui);white-space:normal}
