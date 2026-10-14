@@ -222,7 +222,7 @@ function Trends({ t, n }: { t: XTrends | null; n: number }) {
   const items = t?.items.slice(0, n) ?? [];
   return (
     <div className="t2-trends">
-      <h3><svg viewBox="0 0 24 24" aria-hidden="true" className="t2-x"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.3L5.3 21H2.2l7.2-8.3L1.8 3h6.4l4.4 5.8L17.8 3Zm-1.1 16.2h1.7L7.3 4.7H5.5l11.2 14.5Z" fill="currentColor" /></svg>Trending</h3>
+      <h3><a className="t2-xh" href="https://x.com/home" target="_blank" rel="noopener noreferrer" aria-label="X Trending, open your For You feed on X (new tab)" title="Open X (For You)"><svg viewBox="0 0 24 24" aria-hidden="true" className="t2-x"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.3L5.3 21H2.2l7.2-8.3L1.8 3h6.4l4.4 5.8L17.8 3Zm-1.1 16.2h1.7L7.3 4.7H5.5l11.2 14.5Z" fill="currentColor" /></svg>Trending</a></h3>
       {items.length ? (
         <ol className="t2-tr">
           {items.map((x, i) => {
