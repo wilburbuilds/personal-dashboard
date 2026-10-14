@@ -29,8 +29,8 @@ export const SHORTCUTS: [string[], string][] = [
   [['⌥', '↑'], 'Previous tab'],
   [['⌥', '↓'], 'Next tab (in your page order)'],
   [['⌘', '1–9'], 'Go to tab by position'],
-  [['g', 't · p · s · b · h · q'], 'Go to Today, Projects, Systems, Budget, Health, Query'],
-  [['s'], 'Go to Systems'],
+  [['t · p · s · b · h · q'], 'Go to Today, Projects, Systems, Budget, Health, Query'],
+  [['g', 't · p · s · b · h · q'], 'Same, as a g-sequence'],
   [['/'], 'Focus search (opens Query when the tab has none)'],
   [['j'], 'Next row in a list'],
   [['k'], 'Previous row in a list'],
@@ -105,9 +105,8 @@ export function Shell({ items, phoneTabs, theme, children }: { items: NavItem[];
       const gArmed = Date.now() - pendingG.current < 1200;
       if (e.shiftKey && e.code === 'KeyS') { e.preventDefault(); pendingG.current = 0; router.push('/t/settings'); return; }
       if (e.key === 'r' && !gArmed) { router.refresh(); return; }
-      if (e.key === 's' && !gArmed) { const sys = items.find((i) => i.id === 'systems'); if (sys) router.push(sys.href); return; }
       if (e.key === 'g') { pendingG.current = Date.now(); return; }
-      if (gArmed && keyFor[e.key]) {
+      if (keyFor[e.key]) {
         const item = items.find((i) => i.id === keyFor[e.key]);
         pendingG.current = 0;
         if (item) router.push(item.href);
