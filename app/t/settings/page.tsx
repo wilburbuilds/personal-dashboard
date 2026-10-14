@@ -1,7 +1,7 @@
 import { tabs } from '@/app/tabs/registry';
 import { getSettings, settingsError, DEFAULTS } from '@/lib/settings.mjs';
-import { readRecord } from '@/lib/dashboard-store';
-import { defaultPreferences, type Preferences } from '@/lib/dashboard';
+import type { Preferences } from '@/lib/dashboard';
+import { readPrefs } from '@/lib/prefs';
 import type { SettingsSection } from '@/app/tabs/types';
 import SettingsView, { type PageRow } from './view';
 
@@ -26,7 +26,7 @@ const MARKDOWN: SettingsSection = {
 
 export default async function SettingsPage() {
   const settings = getSettings();
-  const prefs = ((await readRecord('preferences')) as Preferences | null) ?? defaultPreferences;
+  const prefs: Preferences = await readPrefs();
   const pages: PageRow[] = settings.pages.order.map((id) => {
     const t = tabs.find((x) => x.id === id)!;
     const sec = typeof t.settings === 'function' ? t.settings() : t.settings;

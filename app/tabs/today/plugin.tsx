@@ -18,8 +18,7 @@ const today: TabPlugin<TodayData> = {
       { key: 'today.trends', label: 'X trends', help: 'Read from ~/.local/share/home-dashboard/x-trends.json, written by a local agent.', type: 'number', min: 0, max: 10, step: 1 },
       { key: 'today.positions', label: 'Positions shown', help: 'Largest by value first; the rest fold behind “Show more”.', type: 'number', min: 1, max: 30, step: 1 },
       { key: 'today.holdingsStaleHours', label: 'Holdings are stale after', help: 'Flags the Positions sync time when the holdings file is older than this.', type: 'number', min: 1, max: 336, step: 1, unit: 'hours' },
-      { key: 'city', label: 'Weather location', type: 'text', store: 'preferences', maxLength: 150, help: 'City, state or country.' },
-      { key: 'topics', label: 'Headline topics', type: 'text', store: 'preferences', maxLength: 500, help: 'Saved for curated headlines; RSS feeds don’t change.' },
+      { key: 'sourceNotes', label: 'Your sources', type: 'text', store: 'preferences', maxLength: 2000, help: 'Notes about where Today’s data comes from (calendars, channels, Home Assistant). No passwords or tokens. Weather location and headline topics are edited on Today.' },
     ],
   },
 };

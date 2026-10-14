@@ -17,7 +17,8 @@ import {
 import { homeRooms } from '@/lib/homekit.mjs';
 import { validOrigin } from '@/lib/request-origin';
 import { readRecord, saveRecord } from '@/lib/dashboard-store';
-import { snapshotSchema, emptySnapshot, defaultPreferences } from '@/lib/dashboard';
+import { snapshotSchema, emptySnapshot } from '@/lib/dashboard';
+import { readPrefs } from '@/lib/prefs';
 import { isDemo, demoDashboard } from '@/lib/demo/fixtures.mjs';
 export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'private, no-store' };
@@ -25,7 +26,7 @@ export async function GET() {
   if (isDemo()) return Response.json({ ...(demoDashboard() as object), xTrends: await readXTrends() }, { headers });
   try {
     const snapshot = (await readRecord('snapshot')) ?? emptySnapshot();
-    const preferences = (await readRecord('preferences')) ?? defaultPreferences;
+    const preferences = await readPrefs();
     const [health, weather, headlinesRss, calendar, gmail, overnightCuration, headlinesCuration, vaultHeadlines, markets, workout, program] =
       await Promise.all([
         readHealthSource(),

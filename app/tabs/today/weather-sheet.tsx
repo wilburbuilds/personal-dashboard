@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, Thermometer, Sunrise, Sunset, Droplets, Settings2, CircleAlert } from 'lucide-react';
+import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, Thermometer, Sunrise, Sunset, Droplets, MapPin, Pencil, CircleAlert } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { WeatherDetail, Cond } from '@/lib/weather-detail';
+import { MicField } from '@/components/home/mic';
 
 const TZ = 'America/Los_Angeles';
 const WX: Record<Cond, typeof Sun> = { sun: Sun, cloud: Cloud, rain: CloudRain, snow: CloudSnow, storm: CloudLightning };
@@ -13,15 +14,19 @@ const hr = (t: string) => { const h = Number(t.slice(11, 13)); return h === 0 ? 
 const dow = (d: string, i: number) => i === 0 ? 'Today' : new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(new Date(d + 'T12:00:00Z'));
 const uvWord = (u: number) => u < 3 ? 'Low' : u < 6 ? 'Moderate' : u < 8 ? 'High' : u < 11 ? 'Very high' : 'Extreme';
 
-export function WeatherSheet({ open, onOpenChange, onEditLocation }: { open: boolean; onOpenChange: (v: boolean) => void; onEditLocation: () => void }) {
+type Coords = { latitude: number; longitude: number } | null;
+type LocProps = { city: string; deviceLocation: boolean; coords: Coords; locationNote: string; onSaveCity: (city: string) => Promise<string | null>; onDevice: (on: boolean) => Promise<string | null> };
+
+export function WeatherSheet({ open, onOpenChange, city, deviceLocation, coords, locationNote, onSaveCity, onDevice }: { open: boolean; onOpenChange: (v: boolean) => void } & LocProps) {
   const [d, setD] = useState<WeatherDetail | null>(null);
   const [failed, setFailed] = useState(false);
+  const qs = deviceLocation && coords ? `?lat=${coords.latitude.toFixed(2)}&lon=${coords.longitude.toFixed(2)}` : '';
   useEffect(() => {
     if (!open) return;
     let live = true;
-    fetch('/api/weather/detail', { cache: 'no-store' }).then((r) => r.json()).then((j) => { if (live) { setD(j); setFailed(false); } }).catch(() => { if (live) setFailed(true); });
+    fetch('/api/weather/detail' + qs, { cache: 'no-store' }).then((r) => r.json()).then((j) => { if (live) { setD(j); setFailed(false); } }).catch(() => { if (live) setFailed(true); });
     return () => { live = false; };
-  }, [open]);
+  }, [open, qs, city]);
   const Icon = d?.now ? WX[d.now.condition] : Cloud;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,7 +53,7 @@ export function WeatherSheet({ open, onOpenChange, onEditLocation }: { open: boo
           </>
         ) : null}
         <div className="wx-foot">
-          <button type="button" className="hd-btn ghost small" onClick={onEditLocation}><Settings2 aria-hidden className="hd-i" />Location and topics</button>
+          <LocationEditor city={city} deviceLocation={deviceLocation} coords={coords} locationNote={locationNote} onSaveCity={onSaveCity} onDevice={onDevice} />
           <a className="t2-credit" href="https://open-meteo.com/" target="_blank" rel="noreferrer">Weather by Open-Meteo</a>
         </div>
       </DialogContent>
@@ -109,5 +114,38 @@ function WeekList({ days }: { days: WeatherDetail['days'] }) {
         );
       })}
     </ol>
+  );
+}
+
+/** Weather location, edited in place. Saved to the server settings (prefs.city / prefs.deviceLocation). */
+function LocationEditor({ city, deviceLocation, locationNote, onSaveCity, onDevice }: LocProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(city);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const run = async (f: () => Promise<string | null>) => { setBusy(true); setErr(''); const e = await f(); setBusy(false); if (e) setErr(e); else setEditing(false); };
+  if (!editing) {
+    return (
+      <div className="wx-loc">
+        <MapPin aria-hidden className="hd-i" />
+        <span>{deviceLocation ? 'This device’s location' : city || 'No location set'}</span>
+        <button type="button" className="hd-btn ghost small" onClick={() => { setDraft(city); setEditing(true); }}><Pencil aria-hidden className="hd-i" />Change</button>
+        {locationNote ? <span className="hd-faint wx-locnote" role="status">{locationNote}</span> : null}
+      </div>
+    );
+  }
+  return (
+    <form className="wx-locform" onSubmit={(e) => { e.preventDefault(); run(() => onSaveCity(draft.trim())); }}>
+      <label htmlFor="wx-city" className="hd-sr">Weather location</label>
+      <MicField value={draft} onChange={(v) => setDraft(v.slice(0, 150))} label="Dictate location">
+        <input id="wx-city" autoFocus value={draft} maxLength={150} placeholder="City, state or country" onChange={(e) => setDraft(e.target.value)} />
+      </MicField>
+      <button type="submit" className="hd-btn primary small" disabled={busy || !draft.trim()}>{busy ? 'Saving' : 'Save'}</button>
+      <button type="button" className="hd-btn ghost small" onClick={() => setEditing(false)}>Cancel</button>
+      <button type="button" className="hd-btn small" disabled={busy} aria-pressed={deviceLocation} onClick={() => run(() => onDevice(!deviceLocation))}>
+        <MapPin aria-hidden className="hd-i" />{deviceLocation ? 'Stop using this device’s location' : 'Use this device’s location'}
+      </button>
+      {err ? <p role="alert" className="t2-err">{err}</p> : null}
+    </form>
   );
 }

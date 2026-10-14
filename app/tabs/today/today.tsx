@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, MapPin, RefreshCw, CircleAlert, ChevronDown, ChevronRight } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, RefreshCw, SlidersHorizontal, CircleAlert, ChevronDown, ChevronRight } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { emptySnapshot, defaultPreferences, keys, type Snapshot, type Preferences } from '@/lib/dashboard';
 import type { MarketsSource } from '@/lib/markets.mjs';
 import type { XTrends } from '@/lib/x-trends.mjs';
@@ -27,7 +27,6 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
   const cfg = { ...DEF, ...tabData };
   const [data, setData] = useState<Snapshot>(emptySnapshot);
   const [prefs, setPrefs] = useState<Preferences>(defaultPreferences);
-  const [draft, setDraft] = useState<Preferences>(defaultPreferences);
   const [markets, setMarkets] = useState<MarketsSource>(emptyMarkets);
   const [tonight, setTonight] = useState<Tonight | null>(null);
   const [trends, setTrends] = useState<XTrends | null>(null);
@@ -36,12 +35,9 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
   const [loaded, setLoaded] = useState(false);
   const [, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
   const [locationNote, setLocationNote] = useState('');
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [now, setNow] = useState<Date | null>(null);
-  const useDevice = useRef(false);
 
   async function refresh() {
     setLoading(true); setError('');
@@ -49,15 +45,16 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
       const res = await fetch('/api/dashboard', { cache: 'no-store' });
       const json = (await res.json()) as Api;
       if (!res.ok) throw Error(json.error);
-      if (useDevice.current) {
+      setLocationNote('');
+      if (json.preferences?.deviceLocation) {
         try {
           const pos = await new Promise<GeolocationPosition>((ok, no) => navigator.geolocation ? navigator.geolocation.getCurrentPosition(ok, no, { timeout: 10000, maximumAge: 300000 }) : no(Error('Unavailable')));
           const wr = await fetch('/api/weather', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }) });
           const ws = await wr.json();
           if (!wr.ok || !ws.weather) throw Error('Weather unavailable');
           json.snapshot.sources.weather = ws;
-          setLocationNote('Using this device’s location while the dashboard is open.');
-        } catch { setLocationNote('Location unavailable. Showing your saved city.'); }
+          setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        } catch { setCoords(null); setLocationNote('Location unavailable here. Showing your saved city.'); }
       }
       setData(json.snapshot); setPrefs(json.preferences); setMarkets(json.markets || emptyMarkets); setTonight(json.tonight ?? null); setTrends(json.xTrends ?? null); setAllPos(localStorage.getItem(POS_KEY) === '1');
       setLoaded(true);
@@ -67,7 +64,7 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
   }
 
   useEffect(() => {
-    useDevice.current = localStorage.getItem('weather-use-device') === 'true';
+    localStorage.removeItem('weather-use-device');
     refresh();
     const t = setInterval(() => { if (!document.hidden) refresh(); }, 60000);
     const tick = setInterval(() => setNow(new Date()), 30000);
@@ -75,14 +72,16 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true); setSaveError('');
+  /** Partial save to the server settings (prefs). Resolves to an error message, or null. */
+  async function savePrefs(patch: Partial<Preferences>): Promise<string | null> {
     try {
-      const r = await fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
-      const j = (await r.json()) as { error?: string };
+      const r = await fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) });
+      const j = (await r.json()) as { error?: string; preferences?: Preferences };
       if (!r.ok) throw Error(j.error);
-      setPrefs(draft); useDevice.current = false; localStorage.removeItem('weather-use-device'); setLocationNote(''); setOpen(false); refresh();
-    } catch (err) { setSaveError(err instanceof Error ? err.message : 'Couldn’t save.'); } finally { setSaving(false); }
+      if (j.preferences) setPrefs(j.preferences);
+      refresh();
+      return null;
+    } catch (err) { return err instanceof Error && err.message ? err.message : 'Couldn’t save.'; }
   }
 
   const s = data.sources;
@@ -125,7 +124,7 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
           </section>
 
           <section className="t2-sec t2-heads" aria-labelledby="h-hl">
-            <div className="sh"><h2 id="h-hl">Headlines</h2><span className="m">Your topics{cfg.trends ? ' and X' : ''}</span></div>
+            <div className="sh"><h2 id="h-hl">Headlines</h2><TopicsControl topics={prefs.topics} onSave={(topics) => savePrefs({ topics })} /></div>
             {cfg.headlines ? (s.headlines?.items?.length ? (
               <div className="t2-hgrid">
                 {s.headlines.items.slice(0, cfg.headlines).map((h, i) => (
@@ -198,29 +197,11 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
       </div>
 
       {unconnected.length ? (
-        <p className="t2-nc">Not connected yet: {joinWords(unconnected)}. <button className="hd-linkish t2-link" onClick={() => { setDraft(prefs); setOpen(true); }}>Connect sources</button></p>
+        <p className="t2-nc">Not connected yet: {joinWords(unconnected)}. <Link className="hd-linkish t2-link" href="/t/settings#st-today">Your sources</Link></p>
       ) : null}
 
-      <WeatherSheet open={wxOpen} onOpenChange={setWxOpen} onEditLocation={() => { setWxOpen(false); setDraft(prefs); setOpen(true); }} />
-
-      <Dialog open={open} onOpenChange={(v) => { if (v) setDraft(prefs); setOpen(v); }}>
-        <DialogContent className="hd-tokens t2-dialog">
-          <DialogHeader>
-            <DialogTitle>Today settings</DialogTitle>
-            <DialogDescription>Weather location, headline topics and notes about your sources. Account connections are set up on the Mac mini.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={save} className="t2-form">
-            <label>Weather location<MicField value={draft.city} onChange={(v) => setDraft({ ...draft, city: v.slice(0, 150) })} label="Dictate location"><input value={draft.city} maxLength={150} placeholder="City, state or country" onChange={(e) => setDraft({ ...draft, city: e.target.value })} /></MicField></label>
-            <button type="button" className="hd-btn small" onClick={() => { useDevice.current = true; localStorage.setItem('weather-use-device', 'true'); setOpen(false); refresh(); }}><MapPin aria-hidden className="hd-i" />Use this device’s location</button>
-            {locationNote ? <p className="hd-faint" role="status">{locationNote}</p> : null}
-            <label>Headline topics<MicField value={draft.topics} onChange={(v) => setDraft({ ...draft, topics: v.slice(0, 500) })} label="Dictate topics"><textarea value={draft.topics} maxLength={500} placeholder="Topics, publications, things to skip" onChange={(e) => setDraft({ ...draft, topics: e.target.value })} /></MicField></label>
-            <label>Your sources<MicField value={draft.sourceNotes} onChange={(v) => setDraft({ ...draft, sourceNotes: v.slice(0, 2000) })} label="Dictate sources"><textarea value={draft.sourceNotes} maxLength={2000} placeholder="Calendar, Discord channels, Home Assistant. No passwords or tokens." onChange={(e) => setDraft({ ...draft, sourceNotes: e.target.value })} /></MicField></label>
-            {saveError ? <p role="alert" className="t2-err">{saveError}</p> : null}
-            <button type="submit" className="hd-btn primary" disabled={saving}>{saving ? 'Saving' : 'Save'}</button>
-            <a className="hd-faint t2-credit" href="https://open-meteo.com/" target="_blank" rel="noreferrer">Weather by Open-Meteo</a>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <WeatherSheet open={wxOpen} onOpenChange={setWxOpen} city={prefs.city} deviceLocation={!!prefs.deviceLocation} coords={coords} locationNote={locationNote}
+        onSaveCity={(city) => savePrefs({ city, deviceLocation: false })} onDevice={(deviceLocation) => savePrefs({ deviceLocation })} />
     </main>
   );
 }
@@ -323,5 +304,39 @@ function Trends({ t, n }: { t: XTrends | null; n: number }) {
       )}
       {items.length && t?.updatedAt ? <p className={`t2-trmeta${t.stale ? ' stale' : ''}`}>{t.stale ? 'Stale · ' : ''}Updated {clock(t.updatedAt)} PT</p> : null}
     </div>
+  );
+}
+
+/** "Your topics" sits above Headlines; edits happen in an inline popover and save to settings.json. */
+function TopicsControl({ topics, onSave }: { topics: string; onSave: (t: string) => Promise<string | null> }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(topics);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const summary = topics.trim() ? topics.trim().replace(/\s+/g, ' ') : 'Choose topics';
+  return (
+    <Popover open={open} onOpenChange={(v) => { if (v) { setDraft(topics); setErr(''); } setOpen(v); }}>
+      <PopoverTrigger asChild>
+        <button type="button" className="t2-topics" aria-label={`Your topics: ${summary}. Edit`}>
+          <SlidersHorizontal aria-hidden /><span className="t2-topics-l">Your topics</span><span className="t2-topics-v">{summary}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="hd-tokens t2-pop">
+        <form onSubmit={async (e) => { e.preventDefault(); setBusy(true); setErr(''); const r = await onSave(draft.trim()); setBusy(false); if (r) setErr(r); else setOpen(false); }}>
+          <label htmlFor="t2-topics-in" className="t2-pop-h">Headline topics</label>
+          <p className="t2-pop-help" id="t2-topics-help">Topics, publications and things to skip. Used to curate headlines.</p>
+          <MicField value={draft} onChange={(v) => setDraft(v.slice(0, 500))} label="Dictate topics">
+            <textarea id="t2-topics-in" autoFocus rows={3} value={draft} maxLength={500} aria-describedby="t2-topics-help" placeholder="AI, local news, space; skip celebrity gossip" onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit(); }} />
+          </MicField>
+          {err ? <p role="alert" className="t2-err">{err}</p> : null}
+          <div className="t2-pop-f">
+            <span className="hd-faint num">{draft.length}/500</span>
+            <button type="button" className="hd-btn ghost small" onClick={() => setOpen(false)}>Cancel</button>
+            <button type="submit" className="hd-btn primary small" disabled={busy || draft.trim() === topics.trim()}>{busy ? 'Saving' : 'Save'}</button>
+          </div>
+        </form>
+      </PopoverContent>
+    </Popover>
   );
 }

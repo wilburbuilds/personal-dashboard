@@ -228,7 +228,7 @@ function TextField({ f, id, value, onChange, label, help }: { f: SettingField; i
   return (
     <div className="st-row st-wide">
       <div className="st-lab">{label}{help}</div>
-      <span className="hd-micfield st-text"><input id={id} value={v} maxLength={f.maxLength} onChange={(e) => set(e.target.value)} /><Dictate value={v} onChange={set} label={`Dictate ${f.label.toLowerCase()}`} /></span>
+      <span className="hd-micfield st-text">{(f.maxLength ?? 0) > 500 ? <textarea id={id} value={v} rows={4} maxLength={f.maxLength} placeholder="Calendar, Discord channels, Home Assistant" onChange={(e) => set(e.target.value)} /> : <input id={id} value={v} maxLength={f.maxLength} onChange={(e) => set(e.target.value)} />}<Dictate value={v} onChange={set} label={`Dictate ${f.label.toLowerCase()}`} /></span>
     </div>
   );
 }

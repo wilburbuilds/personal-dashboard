@@ -67,3 +67,18 @@ test('corrupt file falls back to defaults', async () => {
   assert.deepEqual(s.pages, S.DEFAULTS.pages);
   assert.ok(S.settingsError());
 });
+
+test('Today prefs live in settings.json and are validated', () => {
+  assert.deepEqual(S.DEFAULTS.prefs, { city: '', topics: '', sourceNotes: '', deviceLocation: false });
+  const r = S.saveSettings({ prefs: { topics: 'AI; skip sports', deviceLocation: true } });
+  assert.equal(r.ok, true);
+  const disk = JSON.parse(readFileSync(file, 'utf8'));
+  assert.equal(disk.prefs.topics, 'AI; skip sports');
+  assert.equal(disk.prefs.deviceLocation, true);
+  assert.equal(disk.prefs.city, '');
+  assert.equal(statSync(file).mode & 0o777, 0o600);
+  assert.equal(S.saveSettings({ prefs: { topics: 'x'.repeat(501) } }).ok, false);
+  assert.equal(S.saveSettings({ prefs: { city: 'Somewhere', extra: 1 } }).ok, false);
+  assert.equal(S.saveSettings({ prefs: { deviceLocation: 'yes' } }).ok, false);
+  assert.equal(S.getSettings().prefs.topics, 'AI; skip sports');
+});

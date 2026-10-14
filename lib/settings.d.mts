@@ -4,6 +4,7 @@ export type Settings = {
   theme: 'system' | 'dark' | 'light'; webFonts: boolean;
   today: { lead: 'rules' | 'off'; headlines: number; trends: number; positions: number; holdingsStaleHours: number };
   todos: { excludeLists: string[]; vikunja: boolean };
+  prefs: { city: string; topics: string; sourceNotes: string; deviceLocation: boolean };
   budget: { overThreshold: number; fixedCategories: string[]; billWindowDays: number };
   health: { tempUnit: 'C' | 'F'; badge: 'off' | 'stale'; logStatus: 'auto' | 'text'; staleLogDays: number };
   markdown: { checkboxes: 'readonly' | 'plain'; dataview: 'code' | 'hide' };

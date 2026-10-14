@@ -24,9 +24,11 @@ type Place = { latitude: number; longitude: number; name: string; admin1?: strin
  * Today's detail and a 7-day forecast from Open-Meteo (free, no key), for the place the
  * Today card already resolved (saved in the weather-cache record). Cached for 20 minutes.
  */
-export async function readWeatherDetail(now = new Date()): Promise<WeatherDetail> {
+export async function readWeatherDetail(now = new Date(), coords?: { latitude: number; longitude: number }): Promise<WeatherDetail> {
   if (isDemo()) return demoWeatherDetail(now);
-  const saved = (await readRecord('weather-cache')) as { key: string; place?: Place } | null;
+  const saved = coords
+    ? { key: `device:${coords.latitude.toFixed(2)},${coords.longitude.toFixed(2)}`, place: { ...coords, name: 'This device’s location' } as Place }
+    : (await readRecord('weather-cache')) as { key: string; place?: Place } | null;
   const place = saved?.place;
   if (!place) return empty('unconnected', 'Choose a weather location first.');
   const cached = (await readRecord('weather-detail-cache')) as { key: string; at: number; detail: WeatherDetail } | null;
