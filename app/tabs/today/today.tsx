@@ -130,10 +130,10 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
             ) : <p className="t2-empty">{s.headlines?.note || 'No headlines yet.'}</p>) : null}
             {cfg.trends ? <Trends t={trends} n={cfg.trends} /> : null}
           </section>
+          <DueToday />
         </div>
 
         <div className="t2-right">
-          <DueToday />
           {replies.length ? (
             <section className="t2-sec" aria-labelledby="h-rp">
               <div className="sh"><h2 id="h-rp">Worth a reply</h2><span className="m">{counts ? `${counts[1]} of ${counts[2]} overnight` : `${replies.length} overnight`}</span></div>
