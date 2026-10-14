@@ -647,15 +647,30 @@ html.light .md pre .s{color:var(--ok-ink)}html.light .md pre .k{color:var(--viz-
 .t2-xh{display:inline-flex;align-items:center;gap:7px;color:inherit;text-decoration:none;border-radius:6px;margin:-2px -6px;padding:2px 6px;transition:color .12s,background-color .12s}
 .t2-xh:hover{color:var(--text);background:var(--h-surface-2)}
 .t2-xh:focus-visible{outline:2px solid var(--h-accent);outline-offset:1px}
-/* Stacked one-line lists: Headlines and X Trending */
+/* Stacked two-line lists: Headlines and X Trending */
 .t2-rows{list-style:none;margin:2px -8px 0;padding:0;counter-reset:tr}
-.t2-row{display:flex;align-items:baseline;gap:10px;min-width:0;padding:7px 8px;border-radius:8px;color:inherit;text-decoration:none;transition:background-color .12s}
+.t2-row{display:block;padding:9px 8px;border-radius:8px;color:inherit;text-decoration:none;transition:background-color .12s}
 .t2-rows li+li .t2-row{box-shadow:0 -1px 0 var(--border)}
-.t2-row b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;font-size:14px;line-height:1.45;color:var(--text)}
-.t2-row span{flex:0 1 auto;max-width:46%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-3)}
+.t2-row b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-weight:500;font-size:14px;line-height:1.4;color:var(--text)}
+.t2-row span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin-top:2px;font-size:12.5px;line-height:1.45;color:var(--text-3)}
+.t2-row em{font-style:normal}
+.t2-row i{font-style:normal;white-space:nowrap;opacity:.85}
+.t2-row em+i::before{content:" · "}
 a.t2-row:hover{background:var(--h-surface-2)}a.t2-row:hover b{text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-strong)}
-a.t2-row:hover+*,.t2-rows li:has(a.t2-row:hover)+li .t2-row{box-shadow:none}
+.t2-rows li:has(a.t2-row:hover)+li .t2-row{box-shadow:none}
 a.t2-row:focus-visible{outline:2px solid var(--h-accent);outline-offset:-2px}
 .t2-tr li{counter-increment:tr}
-.t2-tr b::before{content:counter(tr);display:inline-block;min-width:1.3em;color:var(--text-3);font-variant-numeric:tabular-nums}
-@media (max-width:640px){.t2-row span{max-width:40%}}
+.t2-tr .t2-row{display:grid;grid-template-columns:1.3em minmax(0,1fr);column-gap:2px}
+.t2-tr .t2-row::before{content:counter(tr);grid-row:1 / span 2;color:var(--text-3);font-size:14px;line-height:1.4;font-variant-numeric:tabular-nums}
+.t2-tr .t2-row b,.t2-tr .t2-row span{grid-column:2}
+/* News panel: Headlines + X Trending as one quiet secondary surface (no border, no shadow, lighter than The day) */
+.t2-heads.t2-news{margin-top:24px;padding:14px 20px 16px;border:0;border-radius:var(--r-lg);background:color-mix(in srgb,var(--surface) 42%,var(--bg))}
+.t2-news>.sh{margin-bottom:2px}
+.t2-news .t2-rows{margin-left:-10px;margin-right:-10px}
+.t2-news .t2-row{padding:9px 10px}
+.t2-news .t2-row b{font-weight:600;font-size:14.5px;color:var(--text)}
+.t2-news .t2-row span{font-size:12.5px;color:var(--text-3)}
+.t2-news a.t2-row:hover{background:var(--surface)}
+.t2-news .t2-rows li+li .t2-row{box-shadow:0 -1px 0 color-mix(in srgb,var(--border) 70%,transparent)}
+.t2-news .t2-trends{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+@media (max-width:640px){.t2-heads.t2-news{padding:12px 16px 14px}}

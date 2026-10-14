@@ -1,6 +1,6 @@
 /** Pure timeline + lead-sentence rules for Today v2 (homeConfig.today.lead = 'rules'). */
 export type Tonight = { title: string; time: string | null; duration: number[] | null };
-export type CalItem = { title: string; time?: string; detail?: string; url?: string; label?: string };
+export type CalItem = { title: string; time?: string; detail?: string; summary?: string; url?: string; label?: string };
 export type Ev = { key: string; title: string; detail?: string; url?: string; timeLabel: string; start: number; end: number | null; past: boolean; workout: boolean };
 type Band = { name: 'Morning' | 'Afternoon' | 'Evening'; events: Ev[]; nowIndex: number };
 

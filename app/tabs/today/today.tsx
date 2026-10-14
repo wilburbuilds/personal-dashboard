@@ -119,14 +119,15 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
             {!day ? <div className="t2-band"><h3>&nbsp;</h3><div className="t2-evs"><span className="hd-skel" style={{ height: 120 }} /></div></div> : <DayBands day={day} now={now!} />}
           </section>
 
-          <section className="t2-sec t2-heads" aria-labelledby="h-hl">
+          <section className="t2-sec t2-heads t2-news" aria-labelledby="h-hl">
             <div className="sh"><h2 id="h-hl">Headlines</h2><TopicsControl topics={prefs.topics} onSave={(topics) => savePrefs({ topics })} /></div>
             {cfg.headlines ? (s.headlines?.items?.length ? (
               <ul className="t2-rows">
                 {s.headlines.items.slice(0, cfg.headlines).map((h, i) => {
-                  const meta = [h.label?.split(' · ').at(-1), shortWhen(h.detail)].filter(Boolean).join(' · ');
-                  const full = [h.label, h.detail].filter(Boolean).join(' · ');
-                  return <li key={i}><a className="t2-row" href={h.url} target="_blank" rel="noreferrer" title={full ? `${h.title} — ${full}` : h.title}><b>{h.title}</b>{meta ? <span>{meta}</span> : null}</a></li>;
+                  const when = shortWhen(h.detail);
+                  const summary = h.summary || (h.detail && !when ? h.detail : '');
+                  const meta = [h.label?.split(' · ').at(-1), when].filter(Boolean).join(' · ');
+                  return <li key={i}><a className="t2-row" href={h.url} target="_blank" rel="noreferrer"><b>{h.title}</b><span>{summary ? <em>{summary}</em> : null}{meta ? <i>{meta}</i> : null}</span></a></li>;
                 })}
               </ul>
             ) : <p className="t2-empty">{s.headlines?.note || 'No headlines yet.'}</p>) : null}
@@ -224,7 +225,7 @@ function FragmentWithNow({ show, rule, children }: { show: boolean; rule: ReactN
 function shortWhen(d?: string) {
   if (!d) return '';
   const m = d.match(/([A-Z][a-z]{2} \d{1,2}), (\d{1,2}:\d{2} [AP]M)/);
-  if (!m) return d;
+  if (!m) return '';
   const today = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' }).format(new Date());
   return m[1] === today ? m[2] : m[1];
 }
@@ -237,10 +238,8 @@ function Trends({ t, n }: { t: XTrends | null; n: number }) {
       {items.length ? (
         <ol className="t2-rows t2-tr">
           {items.map((x, i) => {
-            const meta = x.posts || x.context || '';
-            const body = <><b>{x.title}</b>{meta ? <span>{meta}</span> : null}</>;
-            const tip = [x.title, x.context, x.posts].filter(Boolean).join(' — ');
-            return <li key={i}>{x.url ? <a className="t2-row" href={x.url} target="_blank" rel="noreferrer" title={tip}>{body}</a> : <div className="t2-row" title={tip}>{body}</div>}</li>;
+            const body = <><b>{x.title}</b><span>{x.context ? <em>{x.context}</em> : null}{x.posts ? <i>{x.posts}</i> : null}</span></>;
+            return <li key={i}>{x.url ? <a className="t2-row" href={x.url} target="_blank" rel="noreferrer">{body}</a> : <div className="t2-row">{body}</div>}</li>;
           })}
         </ol>
       ) : (
