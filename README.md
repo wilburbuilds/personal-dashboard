@@ -130,13 +130,13 @@ Process env:
 
 | System | Role |
 |---|---|
-| [Grok Bot](https://x.ai/bot) | A small team of AI bots that keep the data fresh and the app moving: a fitness bot writes the day's workout, a news bot writes the X trends file, a finance bot imports and categorizes transactions in Actual Budget and keeps the ticker order current, and an engineering bot builds and ships the app itself. Bots write to the vault, local files and Actual; the dashboard only reads them and never calls the bots. |
+| [Grok Bot](https://x.ai/bot) | A small team of AI bots that keep the data fresh and the app moving: a fitness bot writes the day's workout and runs the daily Fitbit import, a news bot writes the X trends file, a finance bot imports and categorizes transactions in Actual Budget and keeps the ticker order current, bots plan projects and keep tasks current in Vikunja, and an engineering bot builds and ships the app itself. Bots write to the vault, local files, Vikunja and Actual; the dashboard only reads them and never calls the bots. |
 | [Obsidian](https://obsidian.md) | Git-backed markdown vaults: notes, training plans and logs, the services table, and everything Query searches. |
-| [Vikunja](https://vikunja.io) | Self-hosted projects and kanban boards (read, plus moving cards between buckets). |
+| [Vikunja](https://vikunja.io) | Self-hosted projects and kanban boards, kept current by the bots. The dashboard reads them and can move cards between buckets. |
 | [Apple Reminders](https://support.apple.com/guide/reminders/welcome/mac) | Due-today to-dos, read and ticked off through a local CLI. |
 | [Tailscale Serve](https://tailscale.com/kb/1312/serve) | HTTPS on the tailnet only; nothing is exposed to the internet. |
 | [Actual Budget](https://actualbudget.org) | Self-hosted budgeting. A finance bot imports and categorizes transactions; the dashboard reads it through a scheduled sync job. |
-| [Fitbit Web API](https://dev.fitbit.com/build/reference/web-api/) | A self-hosted sync exports sleep, heart rate and steps as JSON into the vault. |
+| [Fitbit Web API](https://dev.fitbit.com/build/reference/web-api/) | A self-hosted sync, run daily by the fitness bot, exports sleep, heart rate and steps as JSON into the vault. |
 | [Yahoo Finance](https://finance.yahoo.com) | Day moves for the Markets row and watch list (chart quotes, cached 60 s server-side). |
 | [RSS](https://www.rssboard.org/rss-specification) | Headlines from a short list of feeds, filtered by your topics. |
 | [Open-Meteo](https://open-meteo.com) | Weather and forecast, no API key. |
@@ -160,6 +160,8 @@ flowchart LR
   B[Grok Bot team] -- workouts, notes --> V
   B -- X trends, ticker order --> J[(local JSON files)]
   B -- imports, categorizes --> A
+  B -- projects, tasks --> VK
+  B -- daily import --> F
   V & VK & R & A & F & G & W & J --> S[Next.js server<br/>launchd · Mac mini]
   S -- Tailscale Serve<br/>tailnet only --> U[Browser / phone]
 ```
