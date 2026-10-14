@@ -157,7 +157,7 @@ flowchart LR
     G[Google Calendar / Gmail]
     W[Open-Meteo / RSS / Yahoo]
   end
-  B[Grok Bot team] -- workouts, notes --> V
+  B[Grok Bot team] -- workouts, notes, recipes --> V
   B -- X trends, ticker order --> J[(local JSON files)]
   B -- imports, categorizes --> A
   B -- projects, tasks --> VK
