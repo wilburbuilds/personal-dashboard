@@ -1,88 +1,102 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
-import { Lock, ExternalLink, CalendarClock } from 'lucide-react';
-import type { Board, Task } from '@/lib/sources/vikunja';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Search, ExternalLink, CircleAlert, Archive, ChevronRight } from 'lucide-react';
+import type { Overview, ProjectSummary } from '@/lib/sources/vikunja-projects';
 import type { Todos } from '@/lib/sources/todos';
 import { TodoLists } from '@/components/home/todos';
 import { timeLabel } from '@/components/home/ui';
 
-const fmtDue = (iso: string) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' }).format(new Date(iso));
-const initials = (s: string) => s.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+type Sort = 'updated' | 'open' | 'name';
+const SORTS: { id: Sort; label: string }[] = [{ id: 'updated', label: 'Recent' }, { id: 'open', label: 'Most open' }, { id: 'name', label: 'Name' }];
 
-function Card({ t, now }: { t: Task; now: number }) {
-  const overdue = !!t.due && !t.done && Date.parse(t.due) < now;
+/** "3 h ago", "Yesterday", "Oct 2". Exact time on hover. */
+export function ago(iso: string | null, now: number) {
+  if (!iso) return 'No activity';
+  const ms = now - Date.parse(iso), h = ms / 36e5;
+  if (h < 1) return `${Math.max(1, Math.round(ms / 6e4))} min ago`;
+  if (h < 24) return `${Math.round(h)} h ago`;
+  if (h < 48) return 'Yesterday';
+  if (h < 24 * 7) return `${Math.round(h / 24)} days ago`;
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' }).format(new Date(iso));
+}
+const exact = (iso: string) => new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Los_Angeles' }).format(new Date(iso)) + ' PT';
+
+export default function ProjectsOverview({ data, fetchedAt }: { data: Overview & { todos?: Todos }; fetchedAt: Date }) {
+  const router = useRouter();
+  const sp = useSearchParams();
+  const [q, setQ] = useState('');
+  const [sort, setSort] = useState<Sort>('updated');
+  const [archived, setArchived] = useState(false);
+  const [now, setNow] = useState(() => fetchedAt.getTime());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 60000); return () => clearInterval(t); }, []);
+  // Old links (/t/projects?p=8) go straight to the board.
+  useEffect(() => { const p = Number(sp.get('p')); if (p > 0) router.replace(`/t/projects/${p}`); }, [sp, router]);
+
+  const nArchived = data.projects.filter((p) => p.archived).length;
+  const shown = useMemo(() => {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    return data.projects
+      .filter((p) => (archived ? true : !p.archived))
+      .filter((p) => words.every((w) => `${p.title} ${p.parent ?? ''}`.toLowerCase().includes(w)))
+      .sort((a, b) => sort === 'name' ? a.title.localeCompare(b.title) : sort === 'open' ? (b.open + b.doing) - (a.open + a.doing) || a.title.localeCompare(b.title) : (b.updated ?? '').localeCompare(a.updated ?? ''));
+  }, [data.projects, q, sort, archived]);
+  const totals = data.projects.filter((p) => !p.archived).reduce((t, p) => ({ open: t.open + p.open, doing: t.doing + p.doing, overdue: t.overdue + p.overdue }), { open: 0, doing: 0, overdue: 0 });
+
   return (
-    <article className={`pj-card${t.done ? ' done' : ''}`}>
-      <div className="pj-row"><span className="pj-ref">{t.ref}</span>{t.assignees[0] ? <span className="pj-who" title={t.assignees[0]}>{initials(t.assignees[0])}</span> : null}</div>
-      <h3>{t.title}</h3>
-      {t.labels.length || t.due ? (
-        <div className="pj-row pj-meta">
-          {t.labels.map((l) => <span key={l.title} className="pj-label"><i style={{ background: l.color || 'var(--h-text-3)' }} />{l.title}</span>)}
-          {t.due ? <span className={overdue ? 'pj-due over' : 'pj-due'}><CalendarClock aria-hidden />{fmtDue(t.due)}</span> : null}
+    <main className="hd-page pj pv">
+      <header className="hd-top">
+        <h1>Projects</h1>
+        <span className="hd-meta num pv-tot">{totals.open + totals.doing} open · {totals.doing} doing{totals.overdue ? <> · <span className="pv-over">{totals.overdue} overdue</span></> : null}</span>
+        <span className="hd-spacer" />
+        <span className="hd-meta">Synced {timeLabel(fetchedAt)}</span>
+        <a className="hd-btn" href={data.publicURL} target="_blank" rel="noreferrer"><ExternalLink aria-hidden className="hd-i" />Vikunja</a>
+      </header>
+
+      <div className="pv-tools">
+        <label className="pv-search"><Search aria-hidden /><span className="hd-sr">Search projects</span>
+          <input type="search" value={q} placeholder="Search projects" onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && shown[0]) router.push(`/t/projects/${shown[0].id}`); }} />
+        </label>
+        <div className="hd-seg" role="group" aria-label="Sort">
+          {SORTS.map((s) => <button key={s.id} aria-pressed={sort === s.id} onClick={() => setSort(s.id)}>{s.label}</button>)}
         </div>
-      ) : null}
-      {t.percent > 0 ? <div className="pj-progress" role="img" aria-label={`${t.percent}% done`}><i style={{ width: `${t.percent}%` }} /></div> : null}
-    </article>
+        {nArchived ? <button className={`hd-btn ghost small pv-arch${archived ? ' on' : ''}`} aria-pressed={archived} onClick={() => setArchived(!archived)}><Archive aria-hidden className="hd-i" />{archived ? 'Hide archived' : `Archived (${nArchived})`}</button> : null}
+      </div>
+
+      {shown.length ? (
+        <ul className="pv-grid" aria-label="Projects">
+          {shown.map((p) => <li key={p.id}><ProjectCard p={p} now={now} /></li>)}
+        </ul>
+      ) : <p className="hd-empty pv-none">{q ? `No projects match “${q}”.` : 'No projects yet.'}</p>}
+
+      {data.todos ? <TodoLists todos={data.todos} /> : null}
+    </main>
   );
 }
 
-export default function ProjectsView({ data, fetchedAt }: { data: Board & { todos?: Todos }; fetchedAt: Date }) {
-  const [mode, setMode] = useState<'board' | 'list'>('board');
-  const [bucket, setBucket] = useState(0);
-  const [now] = useState(() => Date.now());
-  const top = [...data.projects].sort((a, b) => b.open - a.open).slice(0, 3);
-  if (!top.some((p) => p.id === data.project.id)) top.splice(2, 1, data.projects.find((p) => p.id === data.project.id)!);
-  const total = data.buckets.reduce((s, b) => s + b.tasks.length, 0);
+function ProjectCard({ p, now }: { p: ProjectSummary; now: number }) {
+  const total = p.open + p.doing + p.done;
+  const pct = (n: number) => (total ? `${(n / total) * 100}%` : '0%');
   return (
-    <main className="hd-page pj">
-      <header className="hd-top">
-        <h1>Projects</h1>
-        <nav className="hd-seg" aria-label="Project">
-          {top.map((p) => <Link key={p.id} href={`/t/projects?p=${p.id}`} aria-current={p.id === data.project.id ? 'page' : undefined}>{p.title}</Link>)}
-        </nav>
-        <label className="pj-more"><span className="hd-sr">More projects</span>
-          <select value={data.project.id} onChange={(e) => { window.location.href = `/t/projects?p=${e.target.value}`; }}>
-            {data.projects.map((p) => <option key={p.id} value={p.id}>{p.title} ({p.open})</option>)}
-          </select>
-        </label>
-        <span className="hd-spacer" />
-        <span className="hd-meta pj-lock"><Lock aria-hidden className="hd-i" />Read-only, synced {timeLabel(fetchedAt)}</span>
-        <div className="hd-seg" role="group" aria-label="Layout">
-          <button aria-pressed={mode === 'board'} onClick={() => setMode('board')}>Board</button>
-          <button aria-pressed={mode === 'list'} onClick={() => setMode('list')}>List</button>
-        </div>
-        <a className="hd-btn" href={data.project.url} target="_blank" rel="noreferrer"><ExternalLink aria-hidden className="hd-i" />Open in Vikunja</a>
-      </header>
-      <p className="pj-sub hd-muted">{data.project.title}. {total} {total === 1 ? 'task' : 'tasks'} across {data.buckets.length} {data.mode === 'kanban' ? 'buckets' : 'list'}.</p>
-      {mode === 'board' ? (
-        <>
-          <div className="hd-seg pj-bucket-switch" role="group" aria-label="Bucket">
-            {data.buckets.map((b, i) => <button key={b.id} aria-pressed={i === bucket} onClick={() => { setBucket(i); document.getElementById(`pj-col-${b.id}`)?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' }); }}>{b.title} {b.tasks.length}</button>)}
-          </div>
-          <div className="pj-board">
-            {data.buckets.map((b) => (
-              <section key={b.id} id={`pj-col-${b.id}`} className="pj-col" aria-label={b.title}>
-                <header><h2>{b.title}</h2><span className="hd-faint num">{b.tasks.length}{b.limit ? ` / ${b.limit}` : ''}</span></header>
-                {b.tasks.length ? b.tasks.map((t) => <Card key={t.id} t={t} now={now} />) : <p className="hd-empty">Nothing here</p>}
-              </section>
-            ))}
-          </div>
-        </>
-      ) : (
-        <div className="hd-panel pj-list">
-          <table>
-            <thead><tr><th>Task</th><th>Bucket</th><th>Labels</th><th>Due</th><th>Done</th></tr></thead>
-            <tbody>
-              {data.buckets.flatMap((b) => b.tasks.map((t) => (
-                <tr key={t.id}><td><span className="pj-ref">{t.ref}</span> {t.title}</td><td>{b.title}</td><td>{t.labels.map((l) => l.title).join(', ')}</td>
-                  <td className={t.due && !t.done && Date.parse(t.due) < now ? 'pj-due over' : ''}>{t.due ? fmtDue(t.due) : ''}</td><td className="num">{t.percent}%</td></tr>
-              )))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {data.todos ? <TodoLists todos={data.todos} /> : null}
-    </main>
+    <Link href={`/t/projects/${p.id}`} className={`pv-card${p.archived ? ' arch' : ''}`} style={p.color ? { ['--pc' as string]: p.color } : undefined}>
+      <div className="pv-h">
+        <span className="pv-dot" aria-hidden />
+        <div className="pv-t"><h2>{p.title}</h2>{p.parent ? <span className="pv-parent">{p.parent}</span> : null}</div>
+        {p.archived ? <span className="pv-tag">Archived</span> : null}
+        <ChevronRight aria-hidden className="pv-go" />
+      </div>
+      <dl className="pv-counts num">
+        <div><dt>Open</dt><dd>{p.open}</dd></div>
+        <div><dt>Doing</dt><dd>{p.doing}</dd></div>
+        <div><dt>Done</dt><dd>{p.done}</dd></div>
+      </dl>
+      <div className="pv-bar" role="img" aria-label={`${p.done} of ${total} done`}><i className="d" style={{ width: pct(p.done) }} /><i className="g" style={{ width: pct(p.doing) }} /></div>
+      <div className="pv-f">
+        {p.overdue ? <span className="pv-over"><CircleAlert aria-hidden />{p.overdue} overdue</span> : <span className="hd-faint">Nothing overdue</span>}
+        {p.updated ? <time dateTime={p.updated} title={`Last update ${exact(p.updated)}`}>Updated {ago(p.updated, now)}</time> : <span className="hd-faint">No activity</span>}
+      </div>
+    </Link>
   );
 }

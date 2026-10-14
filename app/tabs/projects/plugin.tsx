@@ -1,17 +1,15 @@
 import { SquareKanban } from 'lucide-react';
 import type { TabPlugin } from '../types';
 import { ok } from '../types';
-import { loadBoard, type Board } from '@/lib/sources/vikunja';
+import { loadOverview, type Overview } from '@/lib/sources/vikunja-projects';
 import { readTodos, type Todos } from '@/lib/sources/todos';
-import { homeConfig } from '@/lib/home-config.mjs';
 import ProjectsView from './view';
 
-const projects: TabPlugin<Board & { todos: Todos }> = {
+const projects: TabPlugin<Overview & { todos: Todos }> = {
   id: 'projects', title: 'Projects', icon: SquareKanban, order: 2, status: 'live', refreshSeconds: 120,
-  async load({ params, signal }) {
-    const id = Number(params.get('p')) || homeConfig.vikunja.defaultProject;
-    const [board, todos] = await Promise.all([loadBoard(id, signal), readTodos()]);
-    return ok({ ...board, todos });
+  async load({ signal }) {
+    const [overview, todos] = await Promise.all([loadOverview(signal), readTodos()]);
+    return ok({ ...overview, todos });
   },
   View: ProjectsView,
   settings: {
