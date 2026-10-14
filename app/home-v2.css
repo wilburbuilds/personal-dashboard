@@ -315,3 +315,4 @@ html.light .md pre .s{color:var(--ok-ink)}html.light .md pre .k{color:var(--viz-
 .he .gym-row .hd-meta{display:inline-flex;align-items:center;gap:6px}
 .he .gym h2{display:flex;align-items:center;gap:8px}
 @media (max-width:640px){.he .wd-sec label{grid-template-columns:22px minmax(0,1fr) auto}.he .wd-sec .st{display:none}.hd-help dl>div{grid-template-columns:1fr}}
+.hd-help .hd-ph .hd-btn{margin-left:auto}
