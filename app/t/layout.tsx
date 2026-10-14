@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { Shell, type NavItem } from '@/components/home/shell';
 import { visibleTabs, loadTab } from '@/app/tabs/registry';
+import { homeConfig } from '@/lib/home-config.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,5 +20,5 @@ export default async function TabsLayout({ children }: { children: React.ReactNo
     const Icon = p.icon;
     return { id: p.id, title: p.title, href: `/t/${p.id}`, icon: <Icon aria-hidden className="hd-i" />, beta: p.status === 'beta', badge, summary, refreshSeconds: p.refreshSeconds };
   }));
-  return <Shell items={items} beta={beta}>{children}</Shell>;
+  return <Shell items={items} beta={beta} phoneTabs={homeConfig.phoneTabs}>{children}</Shell>;
 }

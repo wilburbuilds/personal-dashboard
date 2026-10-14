@@ -6,10 +6,11 @@ import today from './today/plugin';
 import projects from './projects/plugin';
 import systems from './systems/plugin';
 import budget from './budget/plugin';
+import health from './health/plugin';
 import query from './query/plugin';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const tabs: TabPlugin<any>[] = [today, projects, systems, budget, query].sort((a, b) => a.order - b.order);
+export const tabs: TabPlugin<any>[] = [today, projects, systems, budget, health, query].sort((a, b) => a.order - b.order);
 
 export const findTab = (id: string) => tabs.find((t) => t.id === id);
 export const visibleTabs = (beta: boolean) => tabs.filter((t) => t.status === 'live' || (beta && t.status === 'beta'));

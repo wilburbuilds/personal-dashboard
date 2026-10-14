@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Search, Copy, ArrowLeft, FileText, History } from 'lucide-react';
 import type { QueryData } from './plugin';
+import { MarkdownNote, noRefs, type Refs } from '@/components/home/markdown';
 
 type Hit = { backend: string; id: string; vault: string; path: string; title: string; snippet: string; score: number };
 
@@ -13,47 +14,14 @@ function marked(text: string): ReactNode[] {
   });
 }
 
-function highlight(line: string, terms: string[]): ReactNode {
-  if (!terms.length) return line;
-  const re = new RegExp(`(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
-  return line.split(re).map((p, i) => (i % 2 ? <mark key={i}>{p}</mark> : p));
-}
-
-function Markdown({ body, terms }: { body: string; terms: string[] }) {
-  const out: ReactNode[] = [];
-  let code: string[] | null = null;
-  let table: string[][] = [];
-  const flush = (k: number) => {
-    if (!table.length) return;
-    const [head, ...rows] = table.filter((r) => !r.every((c) => /^:?-{2,}:?$/.test(c.trim())));
-    out.push(<table key={`t${k}`}><thead><tr>{head.map((c, j) => <th key={j}>{highlight(c, terms)}</th>)}</tr></thead>
-      <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j}>{highlight(c.replace(/\*\*|`/g, ''), terms)}</td>)}</tr>)}</tbody></table>);
-    table = [];
-  };
-  body.replace(/^---\n[\s\S]*?\n---\n/, '').split('\n').forEach((line, i) => {
-    if (!line.startsWith('|')) flush(i);
-    if (line.startsWith('```')) {
-      if (code) { out.push(<pre key={i}><code>{code.join('\n')}</code></pre>); code = null; } else code = [];
-      return;
-    }
-    if (code) { code.push(line); return; }
-    const h = /^(#{1,4})\s+(.*)$/.exec(line);
-    if (h) { const L = `h${Math.min(6, h[1].length + 2)}` as 'h3'; out.push(<L key={i}>{highlight(h[2], terms)}</L>); return; }
-    if (/^\s*[-*]\s+/.test(line)) { out.push(<p key={i} className="q-li">{highlight(line.replace(/^\s*[-*]\s+/, ''), terms)}</p>); return; }
-    if (/^\|/.test(line)) { table.push(line.replace(/^\||\|$/g, '').split('|').map((c) => c.trim())); return; }
-    if (line.trim()) out.push(<p key={i}>{highlight(line, terms)}</p>);
-  });
-  flush(-1);
-  return <div className="q-md">{out}</div>;
-}
-
 export default function QueryView({ data }: { data: QueryData; fetchedAt: Date }) {
   const [q, setQ] = useState(data.q);
   const [scopes, setScopes] = useState<string[]>(data.vaults.map((v) => v.id));
   const [res, setRes] = useState<{ hits: Hit[]; ms: number; errors: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [sel, setSel] = useState<Hit | null>(null);
-  const [doc, setDoc] = useState<string | null>(null);
+  const [sel, setSel] = useState<Hit | null>(data.open ? { backend: 'vault', id: `${data.open.vault}:${data.open.path}`, vault: data.open.vault, path: data.open.path, title: data.open.path.split('/').pop()!.replace(/\.md$/, ''), snippet: '', score: 0 } : null);
+  const [doc, setDoc] = useState<{ body: string; refs: Refs } | null>(null);
+  const [missing, setMissing] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -69,14 +37,14 @@ export default function QueryView({ data }: { data: QueryData; fetchedAt: Date }
 
   const run = useCallback(async (text: string, sc: string[]) => {
     const id = ++seq.current;
-    if (!text.trim()) { setRes(null); setSel(null); return; }
+    if (!text.trim()) { setRes(null); if (!data.open) setSel(null); return; }
     setBusy(true);
     try {
       const r = await fetch(`/api/query?q=${encodeURIComponent(text)}&scope=${sc.join(',')}`);
       const j = await r.json();
       if (id !== seq.current) return;
       setRes(j);
-      setSel(window.matchMedia('(min-width: 1024px)').matches ? (j.hits[0] ?? null) : null);
+      setSel((cur) => (cur && data.open && cur.id === `${data.open.vault}:${data.open.path}` && !text.trim() ? cur : window.matchMedia('(min-width: 1024px)').matches ? (j.hits[0] ?? null) : null));
     } finally { if (id === seq.current) setBusy(false); }
   }, []);
 
@@ -88,7 +56,12 @@ export default function QueryView({ data }: { data: QueryData; fetchedAt: Date }
   useEffect(() => {
     if (!sel) { setDoc(null); return; }
     let live = true;
-    fetch(`/api/query/doc?vault=${encodeURIComponent(sel.vault)}&path=${encodeURIComponent(sel.path)}`).then((r) => r.json()).then((j) => { if (live) setDoc(j.body ?? null); });
+    setMissing(false);
+    if (sel.vault === 'missing') { setDoc(null); setMissing(true); return; }
+    fetch(`/api/query/doc?vault=${encodeURIComponent(sel.vault)}&path=${encodeURIComponent(sel.path)}`).then((r) => r.json()).then((j) => {
+      if (!live) return;
+      if (typeof j.body === 'string') setDoc({ body: j.body, refs: j.refs ?? noRefs }); else { setDoc(null); setMissing(true); }
+    });
     return () => { live = false; };
   }, [sel]);
 
@@ -117,7 +90,7 @@ export default function QueryView({ data }: { data: QueryData; fetchedAt: Date }
         {res ? <span className="hd-meta" aria-live="polite">{res.hits.length} {res.hits.length === 1 ? 'result' : 'results'} in {res.ms} ms</span> : busy ? <span className="hd-meta">Searching</span> : null}
       </div>
       {res?.errors.length ? <p className="hd-faint">{res.errors.join('. ')}</p> : null}
-      {!q.trim() ? (
+      {!q.trim() && !sel ? (
         <section className="hd-panel q-recent" aria-labelledby="q-recent-h">
           <h2 id="q-recent-h">Recent searches</h2>
           {recent.length ? <ul>{recent.map((r) => <li key={r}><button onClick={() => setQ(r)}><History aria-hidden className="hd-i" />{r}</button></li>)}</ul>
@@ -149,7 +122,7 @@ export default function QueryView({ data }: { data: QueryData; fetchedAt: Date }
                     <Copy aria-hidden className="hd-i" />{copied ? 'Copied' : 'Copy path'}
                   </button>
                 </div>
-                {doc === null ? <span className="hd-skel" style={{ height: 200 }} /> : <Markdown body={doc} terms={terms} />}
+                {missing ? <p className="hd-empty">{sel.vault === 'missing' ? `No note yet called “${sel.path}”.` : 'This note could not be read.'}</p> : doc === null ? <span className="hd-skel" style={{ height: 200 }} /> : <MarkdownNote body={doc.body} refs={doc.refs} terms={terms} settings={data.md} />}
               </>
             ) : <p className="hd-empty">Pick a result to preview it.</p>}
           </article>

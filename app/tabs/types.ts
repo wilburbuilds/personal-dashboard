@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { FC } from 'react';
 
-export type TabId = 'today' | 'projects' | 'systems' | 'budget' | 'query';
+export type TabId = 'today' | 'projects' | 'systems' | 'budget' | 'health' | 'query';
 export type TabStatus = 'live' | 'beta' | 'hidden';
 export type SourceResult<D> = { ok: true; data: D; fetchedAt: Date } | { ok: false; error: string; stale?: D };
 export type LoadCtx = { now: Date; signal: AbortSignal; params: URLSearchParams };

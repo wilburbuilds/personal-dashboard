@@ -6,18 +6,18 @@ import { motion, MotionConfig } from 'motion/react';
 import { Drawer } from 'vaul';
 import { Command } from 'cmdk';
 import { useTheme } from 'next-themes';
-import { Search, Moon, FlaskConical } from 'lucide-react';
+import { Search, Moon, FlaskConical, LayoutGrid } from 'lucide-react';
 import type { Attention } from '@/app/tabs/types';
 
 export type NavItem = { id: string; title: string; href: string; icon: ReactNode; beta: boolean; badge: Attention | null; summary: string; refreshSeconds: number };
 
-const keyFor: Record<string, string> = { t: 'today', p: 'projects', s: 'systems', b: 'budget', q: 'query' };
+const keyFor: Record<string, string> = { t: 'today', p: 'projects', s: 'systems', b: 'budget', h: 'health', q: 'query' };
 
 function setBeta(on: boolean) {
   document.cookie = `hd-beta=${on ? 1 : 0}; path=/; max-age=31536000; samesite=lax`;
 }
 
-export function Shell({ items, beta, children }: { items: NavItem[]; beta: boolean; children: ReactNode }) {
+export function Shell({ items, beta, phoneTabs, children }: { items: NavItem[]; beta: boolean; phoneTabs: string[]; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const current = items.find((i) => pathname.startsWith(i.href)) ?? items[0];
@@ -59,6 +59,10 @@ export function Shell({ items, beta, children }: { items: NavItem[]; beta: boole
   }, [items, pathname, router]);
 
   const toggleBeta = (on: boolean) => { setBeta(on); router.refresh(); };
+  // Phone bar: configured tabs (homeConfig.phoneTabs) that are visible, then "More" for the rest.
+  const barItems = phoneTabs.map((id) => items.find((i) => i.id === id)).filter((i): i is NavItem => !!i).slice(0, 4);
+  const moreItems = items.filter((i) => !barItems.includes(i));
+  const moreOn = !!current && moreItems.includes(current);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -98,23 +102,31 @@ export function Shell({ items, beta, children }: { items: NavItem[]; beta: boole
         </div>
 
         <nav className="hd-tabbar" aria-label="Tabs">
-          {items.slice(0, 5).map((i) => {
+          {barItems.map((i) => {
             const on = i.id === current?.id;
             return (
               <Link key={i.id} href={i.href} aria-current={on ? 'page' : undefined}
                 onClick={(e) => { if (on) { e.preventDefault(); setSheet(true); } }}>
-                {on ? <motion.span layoutId="hd-bar-ind" className="hd-bar-ind" transition={{ type: 'spring', stiffness: 420, damping: 36 }} /> : null}
+                {on && !sheet ? <motion.span layoutId="hd-bar-ind" className="hd-bar-ind" transition={{ type: 'spring', stiffness: 420, damping: 36 }} /> : null}
                 {i.icon}
                 <span>{i.title}</span>
                 {i.badge ? <span className={`hd-pip ${i.badge.tone}`} aria-label="needs attention" /> : null}
               </Link>
             );
           })}
+          {moreItems.length ? (
+            <button type="button" className="hd-more" aria-expanded={sheet} aria-haspopup="dialog" aria-current={moreOn ? 'page' : undefined} onClick={() => setSheet((v) => !v)}>
+              {moreOn || sheet ? <motion.span layoutId="hd-bar-ind" className="hd-bar-ind" transition={{ type: 'spring', stiffness: 420, damping: 36 }} /> : null}
+              <LayoutGrid aria-hidden className="hd-i" />
+              <span>More</span>
+              {moreItems.some((i) => i.badge) ? <span className="hd-pip" aria-label="needs attention" /> : null}
+            </button>
+          ) : null}
         </nav>
 
-        <Drawer.Root open={sheet} onOpenChange={setSheet}>
+        {sheet ? <div className="hd-scrim hd-sheet-scrim" aria-hidden onClick={() => setSheet(false)} /> : null}
+        <Drawer.Root open={sheet} onOpenChange={setSheet} modal={false} noBodyStyles>
           <Drawer.Portal>
-            <Drawer.Overlay className="hd-scrim" />
             <Drawer.Content className="hd-sheet hd" aria-describedby={undefined}>
               <div className="hd-grab" />
               <Drawer.Title className="hd-sheet-title">Jump to</Drawer.Title>

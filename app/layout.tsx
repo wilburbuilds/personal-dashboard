@@ -4,6 +4,7 @@ import { ThemeProvider } from 'next-themes';
 import { homeConfig } from '@/lib/home-config.mjs';
 import './globals.css';
 import './home.css';
+import './home-v2.css';
 
 const display = Familjen_Grotesk({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
 const ui = Hanken_Grotesk({ subsets: ['latin'], variable: '--font-ui', display: 'swap' });
