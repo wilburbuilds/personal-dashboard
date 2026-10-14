@@ -14,7 +14,7 @@ import { buildDay, leadSentence, type Tonight, type Ev } from './day-model';
 
 /** Today v2: the day is a timeline, everything else is what needs you. Same /api/dashboard data as before. */
 type Api = { snapshot: Snapshot; preferences: Preferences; tonight?: Tonight | null; xTrends?: XTrends; error?: string };
-const DEF: TodayData = { lead: 'rules', headlines: 3, trends: 3, tickers: [], tickersShown: 6, tickerOrder: 'holdings' };
+const DEF: TodayData = { lead: 'rules', headlines: 3, trends: 3, tickers: [], tickersShown: 6, tickerOrder: 'holdings', chartUrl: 'https://www.tradingview.com/chart/' };
 const TZ = 'America/Los_Angeles';
 const WX = { sun: Sun, cloud: Cloud, rain: CloudRain, snow: CloudSnow, storm: CloudLightning };
 const WXWORD = { sun: 'Sunny', cloud: 'Cloudy', rain: 'Rain', snow: 'Snow', storm: 'Storms' };
@@ -156,7 +156,7 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
             </div>
           </Link>
 
-          <Markets shown={cfg.tickersShown} tickerCount={cfg.tickers.length} />
+          <Markets chartUrl={cfg.chartUrl} shown={cfg.tickersShown} tickerCount={cfg.tickers.length} />
         </div>
       </div>
 

@@ -51,3 +51,13 @@ test('holdings rank file: order only, validated, falls back to saved order', asy
   writeFileSync(f, JSON.stringify({ updatedAt: '2020-01-01T00:00:00Z', tickers: ['MSFT'] }));
   assert.equal(await readTickerRank(f), null);
 });
+
+test('settings: chartUrl accepts TradingView chart URLs only', async () => {
+  const { settingsSchema, DEFAULTS } = await import('../lib/settings.mjs');
+  const ok = (u) => settingsSchema.safeParse({ ...DEFAULTS, today: { ...DEFAULTS.today, chartUrl: u } }).success;
+  assert.equal(DEFAULTS.today.chartUrl, 'https://www.tradingview.com/chart/');
+  assert.ok(ok('https://www.tradingview.com/chart/'));
+  assert.ok(ok('https://www.tradingview.com/chart/Abc123/'));
+  assert.ok(!ok('https://evil.example/chart/'));
+  assert.ok(!ok('javascript:alert(1)'));
+});

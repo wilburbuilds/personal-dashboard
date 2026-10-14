@@ -652,3 +652,8 @@ html.light .md pre .s{color:var(--ok-ink)}html.light .md pre .k{color:var(--viz-
 .st-ordered .st-tag:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .st-ordered .st-tag.dragging{opacity:.4}
 .st-tag-n{margin-right:6px;font-size:11px;font-weight:600;color:var(--text-3)}
+.mk-link{color:inherit;text-decoration:none;border-radius:8px;cursor:pointer;transition:background-color .12s}
+.t2-ps.mk-link{margin:0 -8px;padding:6px 8px}
+.t2-mk .mk-link{display:block;margin:-6px;padding:6px}
+.mk-link:hover{background:var(--h-surface-2)}.mk-link:hover b,.t2-mk .mk-link:hover .k{text-decoration:underline;text-underline-offset:2px}
+.mk-link:focus-visible{outline:2px solid var(--h-accent);outline-offset:1px}

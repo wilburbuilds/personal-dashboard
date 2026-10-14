@@ -11,10 +11,16 @@ const TZ = 'America/Los_Angeles';
 const clock = (d: string) => new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: TZ }).format(new Date(d));
 const fmt = (n: number, d = 2) => n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 const signed = (n: number, d = 2, suf = '') => `${n >= 0 ? '+' : '−'}${fmt(Math.abs(n), d)}${suf}`;
+const TV: Record<string, string> = { '^TNX': 'TVC:US10Y', 'CL=F': 'TVC:USOIL' };
+/** TradingView link for a quote symbol: macro symbols map to TVC feeds, share classes use a dot (BRK-B → BRK.B). */
+export const tvHref = (base: string, sym: string) => {
+  const b = /^https:\/\/(www\.)?tradingview\.com\/chart\//.test(base) ? (base.endsWith('/') ? base : `${base}/`) : 'https://www.tradingview.com/chart/';
+  return `${b}?symbol=${encodeURIComponent(TV[sym] ?? sym.replace('-', '.'))}`;
+};
 const isQ = (q: QuoteResult | undefined): q is Quote => !!q && !('error' in q);
 
 /** Day moves only: price, change and percent for the macro row and the watch list. Loads after the page, polls every 60 s. */
-export function Markets({ shown, tickerCount }: { shown: number; tickerCount: number }) {
+export function Markets({ shown, tickerCount, chartUrl = 'https://www.tradingview.com/chart/' }: { shown: number; tickerCount: number; chartUrl?: string }) {
   const [d, setD] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
@@ -36,13 +42,13 @@ export function Markets({ shown, tickerCount }: { shown: number; tickerCount: nu
       </div>
       {failed && !d ? <p className="t2-note"><CircleAlert aria-hidden />Couldn’t reach the quote service. Retrying every minute.</p> : null}
       <div className="t2-mk mk3 num">
-        {(d?.macro ?? [null, null, null]).map((m, i) => <MacroCell key={m?.symbol ?? i} m={m} />)}
+        {(d?.macro ?? [null, null, null]).map((m, i) => <MacroCell key={m?.symbol ?? i} m={m} base={chartUrl} />)}
       </div>
       {n ? (
         <div className="t2-pos">
           <div className="t2-posh"><h3>Watch list</h3><span className="t2-sync" title={d?.order?.source === 'holdings' ? 'Ordered by position size from the holdings rank file' : 'Saved order (Settings › Today)'}>Largest position first · day move</span></div>
           <div id="t2-tk-list">
-            {d ? list.map((q, i) => (i < shown || open ? <Row key={q.symbol} q={q} extra={i >= shown} /> : null))
+            {d ? list.map((q, i) => (i < shown || open ? <Row key={q.symbol} q={q} extra={i >= shown} base={chartUrl} /> : null))
               : Array.from({ length: Math.min(n, shown) }, (_, i) => <div key={i} className="t2-ps"><span className="hd-skel" style={{ height: 30, gridColumn: '1 / -1' }} /></div>)}
           </div>
           {d && list.length > shown ? (
@@ -56,20 +62,21 @@ export function Markets({ shown, tickerCount }: { shown: number; tickerCount: nu
   );
 }
 
-function MacroCell({ m }: { m: Macro | null }) {
+function MacroCell({ m, base }: { m: Macro | null; base: string }) {
   if (!m) return <div><div className="k"><span className="hd-skel" style={{ width: 70, height: 12 }} /></div><div className="mkv"><span className="hd-skel" style={{ width: 90, height: 20 }} /></div></div>;
   if (!isQ(m)) return <div><div className="k">{m.label}</div><div className="mkv hd-faint">—</div></div>;
   const up = (m.change ?? 0) >= 0, cls = up ? 'up-t' : 'dn-t';
   const val = m.kind === 'yield' ? `${fmt(m.price, 3)}%` : m.symbol === 'CL=F' ? `$${fmt(m.price)}` : fmt(m.price);
   const chg = m.kind === 'yield' ? (m.change == null ? '—' : `${signed(m.change * 100, 0)} bp`) : (m.pct == null ? '—' : signed(m.pct, 2, '%'));
-  return <div title={m.stale ? 'Last good quote; refresh failed' : m.name}><div className="k">{m.label}</div><div className="mkv">{val}<span className={cls}>{chg}</span>{m.stale ? <small className="mk-stale">stale</small> : null}</div></div>;
+  return <a className="mk-link" href={tvHref(base, m.symbol)} target="_blank" rel="noopener noreferrer" aria-label={`${m.label} ${val} ${chg}. Open chart in TradingView (new tab)`} title={m.stale ? 'Last good quote; refresh failed · open in TradingView' : `${m.name} · open in TradingView`}><div className="k">{m.label}</div><div className="mkv">{val}<span className={cls}>{chg}</span>{m.stale ? <small className="mk-stale">stale</small> : null}</div></a>;
 }
 
-function Row({ q, extra }: { q: QuoteResult; extra: boolean }) {
-  if (!isQ(q)) return <div className={`t2-ps num${extra ? ' t2-extra' : ''}`}><div><b>{q.symbol}</b><small>No quote</small></div><span /><span className="r hd-faint">—</span><span className="r hd-faint">—</span></div>;
+function Row({ q, extra, base }: { q: QuoteResult; extra: boolean; base: string }) {
+  const link = { href: tvHref(base, q.symbol), target: '_blank', rel: 'noopener noreferrer' };
+  if (!isQ(q)) return <a {...link} aria-label={`${q.symbol}, no quote. Open chart in TradingView (new tab)`} className={`t2-ps mk-link num${extra ? ' t2-extra' : ''}`}><div><b>{q.symbol}</b><small>No quote</small></div><span /><span className="r hd-faint">—</span><span className="r hd-faint">—</span></a>;
   const up = (q.change ?? 0) >= 0, color = up ? 'var(--viz-ok)' : 'var(--viz-over)', cls = `r ${up ? 'up-t' : 'dn-t'}`;
   return (
-    <div className={`t2-ps num${extra ? ' t2-extra' : ''}`} title={q.stale ? 'Last good quote; refresh failed' : undefined}>
+    <a {...link} aria-label={`${q.symbol} ${q.name ?? ''} ${fmt(q.price)}${q.pct == null ? '' : ` ${signed(q.pct, 2, '%')}`}. Open chart in TradingView (new tab)`} className={`t2-ps mk-link num${extra ? ' t2-extra' : ''}`} title={q.stale ? 'Last good quote; refresh failed · open in TradingView' : 'Open in TradingView'}>
       <div><b>{q.symbol}</b><small>{q.name}</small></div>
       {q.spark ? (
         <svg viewBox="0 0 84 32" width="60" height="28" aria-hidden="true" preserveAspectRatio="none">
@@ -79,6 +86,6 @@ function Row({ q, extra }: { q: QuoteResult; extra: boolean }) {
       ) : <span />}
       <span className="r">{fmt(q.price)}</span>
       <span className={cls}>{q.pct == null ? '—' : signed(q.pct, 2, '%')}<small>{q.change == null ? '' : signed(q.change)}</small></span>
-    </div>
+    </a>
   );
 }
