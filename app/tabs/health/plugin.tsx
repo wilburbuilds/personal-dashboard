@@ -6,6 +6,7 @@ import { ok } from '../types';
 import { homeConfig } from '@/lib/home-config.mjs';
 import { buildOverview, readFitbitBundles, type Overview } from '@/lib/health-data.mjs';
 import { readWorkouts, type Workouts } from '@/lib/workouts.mjs';
+import { readDayNote, type DayNote } from '@/lib/workout-note.mjs';
 import { resolveRefs } from '@/lib/md/resolve.mjs';
 import type { Refs } from '@/components/home/markdown';
 import HealthView from './view';
@@ -14,6 +15,7 @@ export type HealthData = {
   view: 'overview' | 'workouts' | 'note';
   overview: Overview | null;
   workouts: (Workouts & { refs: Refs }) | null;
+  dayNote: DayNote | null;
   note: { path: string; body: string; refs: Refs } | null;
   tempUnit: 'C' | 'F';
   md: { checkboxes: string; dataview: string };
@@ -26,7 +28,7 @@ async function load(params: URLSearchParams): Promise<HealthData> {
   const now = new Date();
   const v = params.get('view');
   const view: HealthData['view'] = v === 'workouts' ? 'workouts' : v === 'note' ? 'note' : 'overview';
-  const base = { view, overview: null, workouts: null, note: null, tempUnit: cfg.tempUnit === 'F' ? 'F' : 'C', md: homeConfig.markdown, now: now.toISOString() } as HealthData;
+  const base = { view, overview: null, workouts: null, dayNote: null, note: null, tempUnit: cfg.tempUnit === 'F' ? 'F' : 'C', md: homeConfig.markdown, now: now.toISOString() } as HealthData;
   if (view === 'note') {
     // Only notes inside the vault's fitness folder are shown here; everything else lives in Query.
     const rel = normalize(params.get('path') || 'training-log.md').replace(/^(\.\.(\/|$))+/, '');
@@ -39,7 +41,8 @@ async function load(params: URLSearchParams): Promise<HealthData> {
   if (view === 'overview') return { ...base, overview };
   const w = await readWorkouts(cfg.vault, now, { logStatus: cfg.logStatus, staleLogDays: cfg.staleLogDays });
   const text = w.log.map((r) => `${r.results}\n${r.notes}`).join('\n');
-  return { ...base, overview, workouts: { ...w, refs: resolveRefs(text, 'personal') } };
+  const dayNote = await readDayNote(cfg.vault, w.today).catch(() => null);
+  return { ...base, overview, dayNote, workouts: { ...w, refs: resolveRefs(text, 'personal') } };
 }
 
 const health: TabPlugin<HealthData> = {

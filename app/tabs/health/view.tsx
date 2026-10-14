@@ -3,6 +3,7 @@ import { ArrowLeft, CircleCheck, CircleDot, Circle, CircleX, CircleDashed, Watch
 import type { HealthData } from './plugin';
 import { Hypnogram, MiniLine, DailyBars, ActivityStrip, hm, clock, stageColor, stageName } from './charts';
 import { MarkdownNote } from '@/components/home/markdown';
+import { DayChecklist, GymBox } from './workout-day';
 import { CollapseOnPhone } from '@/components/home/collapse-on-phone';
 import type { Signal } from '@/lib/health-data.mjs';
 import type { Workouts, WeekDay } from '@/lib/workouts.mjs';
@@ -209,6 +210,13 @@ function WorkoutsView({ data }: { data: HealthData }) {
       </section>
       <CollapseOnPhone />
       <div className="wg">
+        <div className="hd-col">
+        <section className="hd-panel" aria-labelledby="h-dn">
+          <div className="hd-ph"><h2 id="h-dn">Today&apos;s sets</h2>{data.dayNote ? <Link className="hd-meta he-link" href={`/t/health?view=note&path=${encodeURIComponent(data.dayNote.path.replace(/^fitness\//, ''))}`}>Open note</Link> : null}</div>
+          {data.dayNote ? <DayChecklist key={data.dayNote.hash} note={data.dayNote} day={w.today} /> : (
+            <p className="empty">No workout note from Gym for today yet.<small>When Gym writes fitness/workouts/{w.today}.md, each set shows up here to check off.</small></p>
+          )}
+        </section>
         <section className="hd-panel" aria-labelledby="h-se">
           {t ? (
             <>
@@ -233,6 +241,8 @@ function WorkoutsView({ data }: { data: HealthData }) {
             </>
           )}
         </section>
+        <GymBox />
+        </div>
         <div className="hd-col">
           <section className="hd-panel" aria-labelledby="h-lg">
             <div className="hd-ph"><h2 id="h-lg">Training log</h2><Link className="hd-meta he-link" href="/t/health?view=note&path=training-log.md">Open note</Link></div>

@@ -5,6 +5,7 @@ import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, MapPin, RefreshCw, Ci
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { emptySnapshot, defaultPreferences, keys, type Snapshot, type Preferences } from '@/lib/dashboard';
 import type { MarketsSource } from '@/lib/markets.mjs';
+import { MicField } from '@/components/home/mic';
 import { buildDay, leadSentence, type Tonight, type Ev } from './day-model';
 
 /** Today v2: the day is a timeline, everything else is what needs you. Same /api/dashboard data as before. */
@@ -191,11 +192,11 @@ export default function TodayV2() {
             <DialogDescription>Weather location, headline topics and notes about your sources. Account connections are set up on the Mac mini.</DialogDescription>
           </DialogHeader>
           <form onSubmit={save} className="t2-form">
-            <label>Weather location<input value={draft.city} maxLength={150} placeholder="City, state or country" onChange={(e) => setDraft({ ...draft, city: e.target.value })} /></label>
+            <label>Weather location<MicField value={draft.city} onChange={(v) => setDraft({ ...draft, city: v.slice(0, 150) })} label="Dictate location"><input value={draft.city} maxLength={150} placeholder="City, state or country" onChange={(e) => setDraft({ ...draft, city: e.target.value })} /></MicField></label>
             <button type="button" className="hd-btn small" onClick={() => { useDevice.current = true; localStorage.setItem('weather-use-device', 'true'); setOpen(false); refresh(); }}><MapPin aria-hidden className="hd-i" />Use this device’s location</button>
             {locationNote ? <p className="hd-faint" role="status">{locationNote}</p> : null}
-            <label>Headline topics<textarea value={draft.topics} maxLength={500} placeholder="Topics, publications, things to skip" onChange={(e) => setDraft({ ...draft, topics: e.target.value })} /></label>
-            <label>Your sources<textarea value={draft.sourceNotes} maxLength={2000} placeholder="Calendar, Discord channels, Home Assistant. No passwords or tokens." onChange={(e) => setDraft({ ...draft, sourceNotes: e.target.value })} /></label>
+            <label>Headline topics<MicField value={draft.topics} onChange={(v) => setDraft({ ...draft, topics: v.slice(0, 500) })} label="Dictate topics"><textarea value={draft.topics} maxLength={500} placeholder="Topics, publications, things to skip" onChange={(e) => setDraft({ ...draft, topics: e.target.value })} /></MicField></label>
+            <label>Your sources<MicField value={draft.sourceNotes} onChange={(v) => setDraft({ ...draft, sourceNotes: v.slice(0, 2000) })} label="Dictate sources"><textarea value={draft.sourceNotes} maxLength={2000} placeholder="Calendar, Discord channels, Home Assistant. No passwords or tokens." onChange={(e) => setDraft({ ...draft, sourceNotes: e.target.value })} /></MicField></label>
             {saveError ? <p role="alert" className="t2-err">{saveError}</p> : null}
             <button type="submit" className="hd-btn primary" disabled={saving}>{saving ? 'Saving' : 'Save'}</button>
             <a className="hd-faint t2-credit" href="https://open-meteo.com/" target="_blank" rel="noreferrer">Weather by Open-Meteo</a>

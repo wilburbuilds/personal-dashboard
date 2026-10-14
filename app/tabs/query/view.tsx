@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Search, Copy, ArrowLeft, FileText, History } from 'lucide-react';
 import type { QueryData } from './plugin';
+import { Dictate } from '@/components/home/mic';
 import { MarkdownNote, noRefs, type Refs } from '@/components/home/markdown';
 
 type Hit = { backend: string; id: string; vault: string; path: string; title: string; snippet: string; score: number };
@@ -29,11 +30,6 @@ export default function QueryView({ data }: { data: QueryData; fetchedAt: Date }
   const terms = (q.match(/[\p{L}\p{N}_]+/gu) || []).filter((t) => t.length > 1);
 
   useEffect(() => { setRecent(JSON.parse(localStorage.getItem('hd-query-recent') || '[]')); }, []);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === '/' && document.activeElement !== input.current) { e.preventDefault(); input.current?.focus(); } };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
 
   const run = useCallback(async (text: string, sc: string[]) => {
     const id = ++seq.current;
@@ -81,8 +77,9 @@ export default function QueryView({ data }: { data: QueryData; fetchedAt: Date }
       <div className="q-bar">
         <Search aria-hidden className="hd-i" />
         <label htmlFor="q-in" className="hd-sr">Search notes</label>
-        <input id="q-in" ref={input} autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') remember(); }} onBlur={remember}
+        <input id="q-in" data-search ref={input} autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') remember(); }} onBlur={remember}
           placeholder="Search your notes" autoComplete="off" spellCheck={false} />
+        <Dictate value={q} onChange={setQ} label="Search by voice" />
         <kbd>/</kbd>
       </div>
       <div className="q-scopes" role="group" aria-label="Vaults">
@@ -103,7 +100,7 @@ export default function QueryView({ data }: { data: QueryData; fetchedAt: Date }
           <ol className="q-hits" aria-label="Results">
             {res?.hits.map((h) => (
               <li key={h.id}>
-                <button aria-current={sel?.id === h.id ? 'true' : undefined} onClick={() => setSel(h)}>
+                <button data-row aria-current={sel?.id === h.id ? 'true' : undefined} onClick={() => setSel(h)} onFocus={() => setSel(h)}>
                   <strong>{h.title}</strong>
                   <span className="q-path">{h.vault}/{h.path}</span>
                   <span className="q-snip">{marked(h.snippet)}</span>
