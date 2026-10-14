@@ -33,5 +33,5 @@ test('quotes are cached for the TTL and served stale on failure', async () => {
 test('missing intraday points are skipped, not drawn as zero', () => {
   const q = parseChart('X', chart(10, 9, [9, null, 9.5, null, 10]));
   assert.equal(q.spark.points.split(' ').length, 3);
-  assert.ok(q.spark.points.split(' ').every((p) => Number(p.split(',')[1]) < 30));
+  assert.ok(q.spark.points.split(' ').every((p) => { const y = Number(p.split(',')[1]); return y >= 2 && y <= 30; }));
 });
