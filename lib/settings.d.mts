@@ -2,7 +2,7 @@ export type TabIdS = 'today' | 'projects' | 'systems' | 'budget' | 'health' | 'q
 export type Settings = {
   pages: { order: TabIdS[]; hidden: TabIdS[] };
   theme: 'system' | 'dark' | 'light'; webFonts: boolean;
-  today: { lead: 'rules' | 'off'; headlines: number; trends: number; positions: number; holdingsStaleHours: number };
+  today: { lead: 'rules' | 'off'; headlines: number; trends: number; tickers: string[]; tickersShown: number };
   todos: { excludeLists: string[]; vikunja: boolean };
   prefs: { city: string; topics: string; sourceNotes: string; deviceLocation: boolean };
   budget: { overThreshold: number; fixedCategories: string[]; billWindowDays: number };

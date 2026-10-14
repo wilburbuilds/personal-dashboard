@@ -1,0 +1,12 @@
+export type Spark = { points: string; priorY: number | null } | null;
+export type Quote = { symbol: string; name: string; price: number; prev: number | null; change: number | null; pct: number | null; at: string | null; spark: Spark; fetchedAt: string; stale: boolean };
+export type QuoteResult = Quote | { symbol: string; error: string };
+export declare const TTL_MS: number;
+export declare const MACRO: { symbol: string; label: string; kind: 'price' | 'yield' }[];
+export declare const TICKER_RE: RegExp;
+export declare function normTicker(s: unknown): string;
+export declare function sparkline(closes: number[], prev: number | null): Spark;
+export declare function parseChart(symbol: string, json: unknown): Omit<Quote, 'fetchedAt' | 'stale'>;
+export declare function fetchChart(symbol: string, fetchImpl?: typeof fetch): Promise<Omit<Quote, 'fetchedAt' | 'stale'>>;
+export declare function getQuotes(symbols: string[], opts?: { now?: number; fetchImpl?: typeof fetch }): Promise<QuoteResult[]>;
+export declare function _clearQuoteCache(): void;

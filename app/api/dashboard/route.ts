@@ -1,5 +1,4 @@
 import { readHeadlineSource } from '@/lib/headline-source';
-import { readMarketsSource } from '@/lib/markets.mjs';
 import { readXTrends } from '@/lib/x-trends.mjs';
 import { readWorkoutSource } from '@/lib/workout.mjs';
 import { readWorkouts } from '@/lib/workouts.mjs';
@@ -27,7 +26,7 @@ export async function GET() {
   try {
     const snapshot = (await readRecord('snapshot')) ?? emptySnapshot();
     const preferences = await readPrefs();
-    const [health, weather, headlinesRss, calendar, gmail, overnightCuration, headlinesCuration, vaultHeadlines, markets, workout, program] =
+    const [health, weather, headlinesRss, calendar, gmail, overnightCuration, headlinesCuration, vaultHeadlines, workout, program] =
       await Promise.all([
         readHealthSource(),
         readWeatherSource(preferences.city),
@@ -37,7 +36,6 @@ export async function GET() {
         readRecord(CURATION_RECORD_ID),
         readRecord(HEADLINES_CURATION_RECORD_ID),
         readMorningBriefHeadlines(),
-        readMarketsSource(),
         readWorkoutSource(),
         readWorkouts(homeConfig.health.vault).catch(() => null),
       ]);
@@ -77,7 +75,7 @@ export async function GET() {
         note: 'Receiver ready. Waiting for your first HomePod reading.',
         items: [],
       };
-    return Response.json({ snapshot, homeRooms: rooms, preferences, markets, workout, tonight, xTrends }, { headers });
+    return Response.json({ snapshot, homeRooms: rooms, preferences, workout, tonight, xTrends }, { headers });
   } catch {
     return Response.json(
       { error: 'Your dashboard could not be loaded. Try again shortly.' },

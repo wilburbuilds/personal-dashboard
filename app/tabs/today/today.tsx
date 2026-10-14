@@ -1,10 +1,10 @@
 'use client';
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, RefreshCw, SlidersHorizontal, CircleAlert, ChevronDown, ChevronRight } from 'lucide-react';
+import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, RefreshCw, SlidersHorizontal, CircleAlert, ChevronRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { emptySnapshot, defaultPreferences, keys, type Snapshot, type Preferences } from '@/lib/dashboard';
-import type { MarketsSource } from '@/lib/markets.mjs';
+import { Markets } from './markets';
 import type { XTrends } from '@/lib/x-trends.mjs';
 import type { TodayData } from './plugin';
 import { WeatherSheet } from './weather-sheet';
@@ -13,11 +13,9 @@ import { MicField } from '@/components/home/mic';
 import { buildDay, leadSentence, type Tonight, type Ev } from './day-model';
 
 /** Today v2: the day is a timeline, everything else is what needs you. Same /api/dashboard data as before. */
-type Api = { snapshot: Snapshot; preferences: Preferences; markets?: MarketsSource; tonight?: Tonight | null; xTrends?: XTrends; error?: string };
-const DEF: TodayData = { lead: 'rules', headlines: 3, trends: 3, positions: 6, holdingsStaleHours: 24 };
-const POS_KEY = 'hd-today-positions-open';
+type Api = { snapshot: Snapshot; preferences: Preferences; tonight?: Tonight | null; xTrends?: XTrends; error?: string };
+const DEF: TodayData = { lead: 'rules', headlines: 3, trends: 3, tickers: [], tickersShown: 6 };
 const TZ = 'America/Los_Angeles';
-const emptyMarkets: MarketsSource = { status: 'unconnected', updatedAt: null, strip: [], book: null, positions: [], note: 'Markets not loaded yet.' };
 const WX = { sun: Sun, cloud: Cloud, rain: CloudRain, snow: CloudSnow, storm: CloudLightning };
 const WXWORD = { sun: 'Sunny', cloud: 'Cloudy', rain: 'Rain', snow: 'Snow', storm: 'Storms' };
 const clock = (d: Date | string) => new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TZ }).format(new Date(d));
@@ -27,11 +25,9 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
   const cfg = { ...DEF, ...tabData };
   const [data, setData] = useState<Snapshot>(emptySnapshot);
   const [prefs, setPrefs] = useState<Preferences>(defaultPreferences);
-  const [markets, setMarkets] = useState<MarketsSource>(emptyMarkets);
   const [tonight, setTonight] = useState<Tonight | null>(null);
   const [trends, setTrends] = useState<XTrends | null>(null);
   const [wxOpen, setWxOpen] = useState(false);
-  const [allPos, setAllPos] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -56,7 +52,7 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
           setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
         } catch { setCoords(null); setLocationNote('Location unavailable here. Showing your saved city.'); }
       }
-      setData(json.snapshot); setPrefs(json.preferences); setMarkets(json.markets || emptyMarkets); setTonight(json.tonight ?? null); setTrends(json.xTrends ?? null); setAllPos(localStorage.getItem(POS_KEY) === '1');
+      setData(json.snapshot); setPrefs(json.preferences); setTonight(json.tonight ?? null); setTrends(json.xTrends ?? null);
       setLoaded(true);
     } catch (e) {
       setError(e instanceof Error && e.message ? e.message : 'Today couldn’t load.');
@@ -160,39 +156,7 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
             </div>
           </Link>
 
-          <section className="t2-sec" aria-labelledby="h-mk">
-            <div className="sh"><h2 id="h-mk">Markets</h2><span className="m">{markets.updatedAt ? `Quotes ${clock(markets.updatedAt)}` : ''}</span></div>
-            {markets.status === 'error' ? <p className="t2-note"><CircleAlert aria-hidden />{markets.note}</p> : null}
-            {markets.strip.length ? (
-              <div className="t2-mk num">
-                {markets.strip.map((q) => <div key={q.symbol}><div className="k">{q.symbol}</div><div className="mkv">{q.value}<span className={q.direction === 'up' ? 'up-t' : 'dn-t'}>{q.change}</span></div></div>)}
-              </div>
-            ) : markets.status !== 'error' ? <p className="t2-empty">{markets.note}</p> : null}
-            {markets.positions.length || markets.book ? (
-              <div className="t2-pos">
-                <div className="t2-posh">
-                  <h3>Positions</h3>
-                  <Synced at={markets.holdingsAt ?? null} now={now} staleHours={cfg.holdingsStaleHours} />
-                </div>
-                {markets.book ? (
-                  <div className="t2-ps t2-book num">
-                    <div><b>{markets.book.label === 'Today' ? 'Today’s book' : markets.book.label}</b><small>{markets.book.sub}{markets.positions.length ? `, ${markets.positions.length} positions` : ''}</small></div>
-                    <span />
-                    <span className={`r ${markets.book.direction === 'up' ? 'up-t' : 'dn-t'}`}>{markets.book.pct}</span>
-                    <span className={`r ${markets.book.direction === 'up' ? 'up-t' : 'dn-t'}`}>{markets.book.dollars}</span>
-                  </div>
-                ) : null}
-                <div id="t2-pos-list">
-                  {markets.positions.map((p, i) => i < cfg.positions || allPos ? <Position key={`${p.ticker}-${p.detail}-${i}`} p={p} extra={i >= cfg.positions} /> : null)}
-                </div>
-                {markets.positions.length > cfg.positions ? (
-                  <button type="button" className="t2-more" aria-expanded={allPos} aria-controls="t2-pos-list" onClick={() => { const v = !allPos; setAllPos(v); localStorage.setItem(POS_KEY, v ? '1' : '0'); }}>
-                    <ChevronDown aria-hidden className={allPos ? 'up' : ''} />{allPos ? 'Show fewer' : `Show ${markets.positions.length - cfg.positions} more`}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-          </section>
+          <Markets shown={cfg.tickersShown} tickerCount={cfg.tickers.length} />
         </div>
       </div>
 
@@ -252,40 +216,7 @@ function FragmentWithNow({ show, rule, children }: { show: boolean; rule: ReactN
   return <>{show ? rule : null}{children}</>;
 }
 
-type Pos = MarketsSource['positions'][number];
-const usd0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-function Position({ p, extra }: { p: Pos; extra: boolean }) {
-  return (
-    <div className={`t2-ps num${extra ? ' t2-extra' : ''}`}>
-      <div><b>{p.ticker}</b><small>{[p.detail || p.quantity, p.value != null ? `≈${usd0.format(p.value)}` : null].filter(Boolean).join(' · ')}</small></div>
-      {p.sparkline ? (
-        <svg viewBox="0 0 84 32" width="60" height="28" aria-hidden="true" preserveAspectRatio="none">
-          {p.sparkline.priorY != null ? <line x1="4" x2="80" y1={p.sparkline.priorY} y2={p.sparkline.priorY} stroke="var(--text-3)" strokeDasharray="1.5 2.5" strokeWidth="1" /> : null}
-          <polyline points={p.sparkline.points} fill="none" stroke={p.direction === 'up' ? 'var(--viz-ok)' : 'var(--viz-over)'} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        </svg>
-      ) : <span />}
-      <span className={`r ${p.direction === 'up' ? 'up-t' : 'dn-t'}`}>{p.pct}</span>
-      <span className={`r ${p.direction === 'up' ? 'up-t' : 'dn-t'}`}>{p.dollars}</span>
-    </div>
-  );
-}
 
-/** "Synced 7:42 PM" today, "Synced Oct 5, 12:14 PM" otherwise; exact time on hover; flagged past the threshold. */
-function Synced({ at, now, staleHours }: { at: string | null; now: Date | null; staleHours: number }) {
-  if (!at) return <span className="t2-sync">Not synced</span>;
-  const d = new Date(at), n = now ?? new Date();
-  const sameDay = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d) === new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(n);
-  const label = sameDay ? clock(d) : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: TZ }).format(d);
-  const hrs = (n.getTime() - d.getTime()) / 3600000;
-  const stale = hrs > staleHours;
-  const ago = hrs < 1 ? `${Math.max(1, Math.round(hrs * 60))} min ago` : hrs < 48 ? `${Math.round(hrs)} h ago` : `${Math.round(hrs / 24)} days ago`;
-  const exact = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: TZ }).format(d) + ' PT';
-  return (
-    <time className={`t2-sync${stale ? ' stale' : ''}`} dateTime={at} title={`Holdings synced ${exact} (${ago})`}>
-      {stale ? <CircleAlert aria-hidden /> : null}Synced {label} PT{stale ? <span className="hd-sr">, more than {staleHours} hours old</span> : null}
-    </time>
-  );
-}
 
 function Trends({ t, n }: { t: XTrends | null; n: number }) {
   const items = t?.items.slice(0, n) ?? [];
