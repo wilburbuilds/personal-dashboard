@@ -56,3 +56,14 @@ next-env.d.ts
 /google-oauth.json
 /oauth.json
 /tokens.json
+
+# Home dashboard runtime data (never commit)
+/env
+*.env
+budget*.json
+health.json
+systems-history.json
+*.jsonl
+query.db*
+gym-inbox.md
+/demo-data/

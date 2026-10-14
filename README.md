@@ -1,130 +1,100 @@
-# Today · Personal dashboard
+# Home
 
-Private personal dashboard for the owner, stored in `wilburbuilds/personal-dashboard`. Includes weather, health, calendar, overnight notifications, follow-ups, headlines, scheduled tasks, Discord, and Home Assistant sections. Data connections and daily scheduling are still pending.
+A private, self-hosted personal dashboard that runs on a Mac mini and is reachable only over a Tailscale tailnet. One fast, keyboard-friendly app pulls together the day, tasks, home-server health, budget, health and workouts, and full-text search across Obsidian vaults.
 
-## Run on the Mac mini
+> All screenshots below use **demo mode** (`npm run demo`): every name, number, note and transaction is synthetic.
 
-Install Node.js 22.13 or later and authenticate GitHub as **wilburbuilds**, then:
+![Today](docs/screenshots/today.png)
+
+## Tabs
+
+| Tab | What it shows | Source |
+|---|---|---|
+| **Today** | A timeline of the day with a "now" rule and tonight's workout slotted in, replies worth sending, body metrics, markets and headlines | Google Calendar + Gmail (read-only), Open-Meteo, RSS / curated brief, Yahoo quotes, Fitbit exports |
+| **Projects** | Read-only kanban board | Vikunja API (GET only) |
+| **Systems** | Up/degraded/down for every home service, with a 24-hour history | Services table in a vault note, local probes, optional health feed JSON |
+| **Budget** | Pace vs. target, category trends, upcoming bills, card interest, and a short "what to do" list | Actual Budget via `@actual-app/api`, cached by a read-only sync job |
+| **Health** | Overview (sleep stages, overnight signals, activity, two-week trends) and Workouts (week strip, today's sets checklist, training log, records, a "Tell Gym" box) | Fitbit raw exports + training notes in the vault |
+| **Query** | SQLite FTS5 search across vaults, with rendered markdown (wikilinks, callouts, embeds) | Obsidian vaults on disk |
+
+| | |
+|---|---|
+| ![Budget](docs/screenshots/budget.png) | ![Health](docs/screenshots/health.png) |
+| ![Workouts](docs/screenshots/workouts.png) | ![Systems](docs/screenshots/systems.png) |
+| ![Projects](docs/screenshots/projects.png) | ![Query](docs/screenshots/query.png) |
+| ![Command palette](docs/screenshots/palette.png) | <img src="docs/screenshots/phone-budget.png" width="260" alt="Budget on a phone"> |
+
+### Keyboard
+
+`⌘K` palette · `⌥↑`/`⌥↓` previous/next tab · `⌘1–9` tab by position · `g` then `t h b s p q` · `/` search · `j`/`k` rows · `[`/`]` sub-views · `r` refresh · `?` all shortcuts · `Esc` close. Every text field has a mic button for dictation (the browser's built-in Web Speech API).
+
+## Architecture
+
+- **Next.js 16 / React 19 / TypeScript**, server-rendered. `scripts/start.mjs` binds to `127.0.0.1` only and rejects unknown `Host`/`Origin` headers and cross-site writes.
+- **Tailscale Serve** gives tailnet-only HTTPS on its own port. Funnel is never used, and there is no public login; the tailnet is the boundary.
+- **launchd** keeps the server running (`npm run service:install`) plus two helper jobs: Budget sync (every 30 min) and overnight-mail curation.
+- **Private data stays outside Git**: runtime SQLite, caches and logs live in `~/Library/Application Support/Personal Dashboard/` and `~/.local/share/home-dashboard/`. Secrets go in a mode-600 env file (below).
+- **Writes are deliberately narrow.** Everything is read-only except two vault writes: (1) flipping `- [ ]`↔`- [x]` on an existing set line in `fitness/workouts/YYYY-MM-DD.md`, matched by line hash with a per-file lock and an atomic rename, and (2) appending to `fitness/gym-inbox.md`. Vikunja and Actual are read-only.
+
+```
+app/
+  t/[tab]/page.tsx        one route renders any tab
+  tabs/registry.ts        list of tab plugins
+  tabs/<id>/plugin.tsx    data loader + metadata
+  tabs/<id>/view.tsx      UI
+  api/…                   dashboard, query, budget sync, workout check, gym
+components/home/          shell (rail, tab bar, palette, shortcuts), markdown, mic
+lib/                      source adapters (calendar, gmail, health, workouts, budget, systems, query, demo fixtures)
+lib/home-config.mjs       every design/behaviour switch in one place
+scripts/                  start, service installers, budget sync, demo
+tests/                    node:test suites (synthetic data only)
+```
+
+### Tab plugin contract
+
+Every tab is a `TabPlugin<D>` (`app/tabs/types.ts`):
+
+```ts
+interface TabPlugin<D> {
+  id: TabId; title: string; icon: LucideIcon; order: number;
+  status: 'live' | 'beta' | 'hidden';          // beta tabs show with ?beta=1
+  refreshSeconds: number;                      // 0 = no auto refresh
+  load(ctx: { now: Date; signal: AbortSignal; params: URLSearchParams }): Promise<SourceResult<D>>;
+  View: FC<{ data: D; fetchedAt: Date }>;
+  attention?(data: D): { count: number; tone: 'warn' | 'over' } | null;   // rail badge
+  summary?(data: D): string;                                            // palette / jump sheet line
+  Skeleton?: FC;
+}
+```
+
+`load` runs on the server once per request (shared by the nav badges and the page), is timed and logged, and returns `ok(data)` or `fail(error, stale?)`. To add a tab, create `app/tabs/<id>/plugin.tsx` and `view.tsx`, then add it to `registry.ts`.
+
+## Setup
+
+Requires macOS, Node 22.13+ and Tailscale.
 
 ```sh
-git clone https://github.com/wilburbuilds/personal-dashboard.git
-cd personal-dashboard
 npm ci
 npm run build
-npm start
+npm start                         # http://127.0.0.1:3000
+npm run service:install           # LaunchAgent: start at login, restart on crash
+tailscale serve --bg --https=9443 http://127.0.0.1:3000
 ```
 
-Open http://127.0.0.1:3000 on the Mac mini. The server listens on loopback only, validates request hosts and origins, and sends no-store responses. It requires no Sites, Cloudflare, or work account.
+Set `DASHBOARD_ORIGIN` to the tailnet HTTPS origin (for example `https://<machine>.<tailnet>.ts.net:9443`) when installing the service. Optional jobs: `npm run service:install-budget-sync`, `npm run service:install-overnight-curate`. Google OAuth: `npm run oauth:google` (see [GOOGLE.md](GOOGLE.md)).
 
-For access from another computer, use an SSH tunnel to the Mac mini:
+**Demo mode:** `npm run build && npm run demo` serves synthetic data for every tab at http://127.0.0.1:3200, using a throwaway data directory and no personal sources.
 
-```sh
-ssh -N -L 3000:127.0.0.1:3000 YOUR_MAC_USER@YOUR_MAC_MINI
-```
+Checks: `npm run typecheck`, `npm run test:unit`.
 
-Then open http://127.0.0.1:3000 on that computer. SSH access must already be configured. Do not expose or port-forward this dashboard publicly; it intentionally trusts the local Mac user and has no public login system.
+### Environment variables (names only; never commit values)
 
-## Start automatically
+Secrets file `~/.config/home-dashboard/env` (mode 600): `VIKUNJA_URL`, `VIKUNJA_API_TOKEN`, `GYM_WEBHOOK_URL`, `GYM_WEBHOOK_SECRET`.
 
-On the Mac mini, after a successful build:
+Process env: `DASHBOARD_ORIGIN`, `PORT`, `DASHBOARD_DATA_DIR`, `DASHBOARD_PERSONAL_VAULT`, `DASHBOARD_MORNING_HTML`, `DASHBOARD_GOOGLE_CONFIG_DIR`, `DASHBOARD_GOOGLE_OAUTH`, `DASHBOARD_GOOGLE_TOKENS`, `ACTUAL_SERVER_PASSWORD` (or the macOS keychain), `GROK_BIN`, `HOMEKIT_BIND_ADDRESS`, `HOMEKIT_RECEIVER_URL`, `HD_DATA_DIR`, `HD_ENV_FILE`, `HD_LOAD_LOG`, `HD_SERVICES_FILE`, `HD_HEALTH_FEED`, `HD_QUERY_VAULTS`, `HD_DEMO`, `HD_DEMO_DIR`.
 
-```sh
-npm run service:install
-```
+## Hosting and privacy
 
-This installs a macOS LaunchAgent for the current user, starts the dashboard, and restarts it after a crash or at login. The user must be logged in, and the Mac must be awake. It is not a system daemon that starts before login. Re-run the installer if the checkout or Node binary moves.
-
-```sh
-npm run service:uninstall
-```
-
-Uninstalling the service preserves personal data.
-
-## Data and backups
-
-SQLite data lives outside the repository in `~/Library/Application Support/Personal Dashboard/dashboard.sqlite`. Logs are in the same directory. Set `DASHBOARD_DATA_DIR` to override the location for a manual start. No health readings, messages, credentials, or runtime database belongs in GitHub.
-
-Back up the database using SQLite's backup feature, or stop the service before copying the data directory. Do not copy only the main SQLite file while writes are running: current data may also be in its WAL file. Updates preserve the database because it lives outside the checkout.
-
-## Update from GitHub
-
-```sh
-git pull --ff-only
-npm ci
-npm run build
-npm run service:install
-```
-
-Code changes are committed and pushed explicitly. There is no unattended code deployment or automatic push of local files. The Mac mini pulls the same private GitHub repository.
-
-## Development
-
-`npm run dev` starts the development server on loopback. `npm run typecheck` checks types. Production uses `npm run build` followed by `npm start`.
-
-See [UPDATE.md](UPDATE.md) for the local daily-update API. The initial private Sites preview remains a separate older deployment; this repository no longer publishes to it.
-
-## Private Tailscale access
-
-For this installation the dashboard has its own Tailscale HTTPS listener on port 9443. Existing listeners remain unchanged. The Node server still binds only to 127.0.0.1:3000. Tailscale Serve grants access according to the tailnet's access rules; it is not a public Funnel.
-
-On the Mac mini, install or update the service with its exact private origin:
-
-```sh
-DASHBOARD_ORIGIN=https://machine.tailnet.ts.net:9443 npm run service:install
-/Applications/Tailscale.app/Contents/MacOS/Tailscale serve --bg --https=9443 http://127.0.0.1:3000
-```
-
-Open https://machine.tailnet.ts.net:9443 from a device connected to your Tailscale network. Preserve `DASHBOARD_ORIGIN` when reinstalling the startup service. Do not enable Tailscale Funnel for this dashboard.
-
-The glass interface uses translucent layers, blur, subtle edge highlights, and a system font. It respects reduced motion and reduced transparency preferences, and has a solid-surface fallback for browsers without backdrop blur.
-
-## HomePod receiver
-
-The dashboard exposes a private setup page at `/homekit`. Its reveal button retrieves a copy-ready automation prompt with the real receiver address and a token; do not share that prompt or commit the token. The token is generated once and stored with permissions 0600 outside the repository in the dashboard data directory.
-
-The separate intake server accepts only `POST /api/homekit` on port 3088, requires `Authorization: Bearer <token>`, limits requests to 16 KiB, and validates temperatures, humidity, room names, and observation times. It exposes no dashboard, settings, or read endpoint on the LAN. The dashboard stays localhost/Tailscale-only. LAN intake uses HTTP; the token is scoped only to submitting HomePod readings.
-
-Install the service with `HOMEKIT_BIND_ADDRESS` set to the mini's LAN IPv4 address and `HOMEKIT_RECEIVER_URL` set to `http://localhost:3088/api/homekit`. The installer preserves existing port/origin/receiver settings on subsequent updates. If DHCP changes the mini's LAN address, update HOMEKIT_BIND_ADDRESS and reinstall the service; a router DHCP reservation avoids this.
-
-Readings persist separately in `homekit.sqlite`, survive brief snapshot updates, and retain 30 days of history. Duplicate room/timestamp readings are ignored; older uploads never replace newer measurements. “At home” displays Fahrenheit, humidity, timestamps, and a 24-hour temperature trend after multiple readings arrive. Readings older than one hour are marked stale. While visible, the dashboard reloads saved data every minute.
-
-Apple Home scheduling and permissions must be configured on the iPhone and verified with a real reading. No Home automation has been created by installing this receiver. `node --test tests/homekit.test.mjs` exercises authentication, validation, duplicate handling, and stale/out-of-order data using isolated temporary storage.
-
-## Health source
-
-## Markets and Workout
-
-Markets and Workout are returned alongside the dashboard snapshot (not snapshot source keys).
-
-- **Markets strip:** live SPY and US 10-year (`^TNX`) from Yahoo Finance chart quotes.
-- **Positions:** Quiet-list rows (day P/L badges, sparklines) parsed from `~/morning/index.html` when the morning page has been curated.
-- **Workout:** today’s session from `~/vaults/personal/fitness/current-program.md` (Mon Day C / Tue Day A / Thu Day B / Sat technique). Labeled **Workout**, never Lift. Override morning HTML with `DASHBOARD_MORNING_HTML`; vault root with `DASHBOARD_PERSONAL_VAULT`.
-
-The health tile reads the latest dated export from `~/vaults/personal/fitness/fitbit-air/raw/`, plus `fitness/current-program.md` and `fitness/training-log.md`. Override the vault root with `DASHBOARD_PERSONAL_VAULT` for local development. It shows Fitbit main-sleep time asleep, Fitbit resting heart rate (excluding duplicate Apple Health sources), and daily steps as of import. Missing metrics stay blank; stale or partial readings are flagged. Training notes are labeled as saved plans/log entries, not inferred workout completion.
-
-The browser receives only display metrics and training summaries, never raw export IDs or credentials. It rereads exports on each dashboard refresh; this reader does not itself sync the wearable or schedule the existing Fitbit importer. Tests: `node --test tests/health.test.mjs`.
-
-
-## Google Calendar + Gmail
-
-Personal Google Calendar and Gmail for **your personal Google account** only (never the work account). Read-only morning-brief overlays into `GET /api/dashboard`:
-
-- **Calendar**: remaining today in America/Los_Angeles, capped ~12 hours ahead.
-- **Overnight** (“While you were away”): inbox mail in the 10 PM–8 AM Pacific window within ~24 hours.
-- **Follow-ups** (“A little nudge”): inbox unread, important, or starred from the last 3 days (small cap).
-
-OAuth client secrets and tokens live in `~/.config/personal-dashboard/` (outside git). See [GOOGLE.md](GOOGLE.md) for GCP console steps (reuse fitbit-air-ingest + Web client on port 8766), `npm run oauth:google`, and publishing notes. Unit tests: `npm run test:calendar` and `npm run test:gmail`.
-
-## Weather source
-
-Weather uses the saved city preference, Open-Meteo geocoding, and the daily forecast API. Use a specific location such as `Portland, Oregon`; ambiguous matches are rejected. High/low Fahrenheit and a daily condition icon refresh on dashboard requests, cached for 30 minutes. Failed requests retain only a clearly marked same-day forecast; older forecasts are not presented as today's weather. Source attribution appears on the tile. Location queries are sent to Open-Meteo; no account credentials are needed.
-
-“Use my location” requests browser location permission on the viewing device (including iPhone Safari over the private HTTPS URL). The opt-in is remembered on that browser; location is requested during visible dashboard refreshes with a five-minute maximum cached position age. Denied/unavailable location falls back to the saved city. “Choose city” disables device location. Coordinates are rounded to two decimals before querying Open-Meteo, and only the most recent device forecast is cached on the mini. This is foreground browser location, not continuous iPhone tracking. Forecast days currently follow the dashboard's Pacific timezone, explicitly labeled in the tile.
-
-## Headline sources
-
-**Floor:** BBC World and Technology, TechCrunch AI, CNBC markets, and NPR politics RSS (`lib/headlines.mjs`). Up to two recent titles per topic, publisher links, deduplicated URLs/titles, latest 36 hours. Overnight labels mean 10 PM–8 AM Pacific within the past 24 hours. Feeds refresh on dashboard requests, cached for 30 minutes.
-
-**Curated overlay (preferred when fresh):** If today’s Pacific morning brief exists at `~/vaults/personal/briefs/morning/YYYY-MM-DD.md` and its `## Headlines` section parses to ≥1 markdown link (`- [Title](url) — optional why`, max ~6), `GET /api/dashboard` **replaces** RSS headlines with that curated list. Same freshness idea as overnight mail curation. Agents that skip the vault may `PUT /api/headlines-curation` with a JSON source (same Pacific day, ≥1 item). Vault wins when both are fresh. Missing/stale/empty → RSS floor.
-
-Copy-paste agent instructions: [AGENT_HEADLINES_PROMPT.md](AGENT_HEADLINES_PROMPT.md). Vault README lives only on the mini under `briefs/morning/` (personal is not on GitHub). Edit `lib/headlines.mjs` to change RSS publishers; preference text does not reconfigure feeds.
+- Tailnet only. The server listens on loopback and Tailscale Serve terminates HTTPS. Do not enable Funnel or port-forward it.
+- No health exports, messages, budget data, vault content, tokens or databases belong in this repository. `.gitignore` covers env files, SQLite/DB files, logs and local caches.
+- More detail on each data source and on operations: [docs/SOURCES.md](docs/SOURCES.md), [UPDATE.md](UPDATE.md), [HANDOFF.md](HANDOFF.md).
