@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { Quote, QuoteResult } from '@/lib/quotes.mjs';
 
 type Macro = QuoteResult & { label: string; kind: 'price' | 'yield' };
-type Data = { fetchedAt: string | null; macro: Macro[]; tickers: QuoteResult[] };
+type Data = { fetchedAt: string | null; order?: { source: 'holdings' | 'saved'; updatedAt: string | null }; macro: Macro[]; tickers: QuoteResult[] };
 const OPEN_KEY = 'hd-today-tickers-open';
 const TZ = 'America/Los_Angeles';
 const clock = (d: string) => new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: TZ }).format(new Date(d));
@@ -40,14 +40,14 @@ export function Markets({ shown, tickerCount }: { shown: number; tickerCount: nu
       </div>
       {n ? (
         <div className="t2-pos">
-          <div className="t2-posh"><h3>Watch list</h3><span className="t2-sync">Day move</span></div>
+          <div className="t2-posh"><h3>Watch list</h3><span className="t2-sync" title={d?.order?.source === 'holdings' ? 'Ordered by position size from the holdings rank file' : 'Saved order (Settings › Today)'}>Largest position first · day move</span></div>
           <div id="t2-tk-list">
             {d ? list.map((q, i) => (i < shown || open ? <Row key={q.symbol} q={q} extra={i >= shown} /> : null))
               : Array.from({ length: Math.min(n, shown) }, (_, i) => <div key={i} className="t2-ps"><span className="hd-skel" style={{ height: 30, gridColumn: '1 / -1' }} /></div>)}
           </div>
           {d && list.length > shown ? (
-            <button type="button" className="t2-more" aria-expanded={open} aria-controls="t2-tk-list" onClick={() => { const v = !open; setOpen(v); localStorage.setItem(OPEN_KEY, v ? '1' : '0'); }}>
-              <ChevronDown aria-hidden className={open ? 'up' : ''} />{open ? 'Show fewer' : `Show ${list.length - shown} more`}
+            <button type="button" className="t2-more t2-more-block" aria-expanded={open} aria-controls="t2-tk-list" onClick={() => { const v = !open; setOpen(v); localStorage.setItem(OPEN_KEY, v ? '1' : '0'); }}>
+              <ChevronDown aria-hidden className={open ? 'up' : ''} />{open ? 'Show fewer' : `Show ${list.length - shown} more ticker${list.length - shown === 1 ? '' : 's'}`}
             </button>
           ) : null}
         </div>

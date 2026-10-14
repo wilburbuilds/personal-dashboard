@@ -35,3 +35,19 @@ test('missing intraday points are skipped, not drawn as zero', () => {
   assert.equal(q.spark.points.split(' ').length, 3);
   assert.ok(q.spark.points.split(' ').every((p) => { const y = Number(p.split(',')[1]); return y >= 2 && y <= 30; }));
 });
+
+import { readTickerRank, orderTickers } from '../lib/ticker-rank.mjs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+test('holdings rank file: order only, validated, falls back to saved order', async () => {
+  const f = join(mkdtempSync(join(tmpdir(), 'hd-rank-')), 'r.json');
+  assert.equal(await readTickerRank(f), null);
+  writeFileSync(f, JSON.stringify({ updatedAt: new Date().toISOString(), tickers: ['mu', 'SPY', 'bad ticker', 'MU'], values: [1, 2] }));
+  const r = await readTickerRank(f);
+  assert.deepEqual(r.tickers, ['MU', 'SPY']);
+  assert.deepEqual(orderTickers(['SPY', 'KNCT', 'MU'], r), ['MU', 'SPY', 'KNCT']);
+  assert.deepEqual(orderTickers(['SPY', 'KNCT'], null), ['SPY', 'KNCT']);
+  writeFileSync(f, JSON.stringify({ updatedAt: '2020-01-01T00:00:00Z', tickers: ['MU'] }));
+  assert.equal(await readTickerRank(f), null);
+});

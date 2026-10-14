@@ -33,6 +33,9 @@ export type SettingField = {
   min?: number; max?: number; step?: number; unit?: string; maxLength?: number;
   /** 'settings' (default) writes settings.json; 'preferences' writes the existing Today preferences store. */
   store?: 'settings' | 'preferences';
+  /** tags only: chips can be reordered (drag, or Alt+Arrow keys); order is saved. */
+  orderable?: boolean;
+  placeholder?: string;
 };
 export type SettingsSection = { title?: string; description?: string; fields: SettingField[] };
 

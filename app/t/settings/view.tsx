@@ -235,17 +235,40 @@ function TextField({ f, id, value, onChange, label, help }: { f: SettingField; i
 
 function Tags({ f, value, onChange, help }: { f: SettingField; value: string[]; onChange: (v: unknown) => void; help: ReactNode }) {
   const [draft, setDraft] = useState('');
-  const add = () => { const t = draft.trim(); if (!t || value.includes(t)) { setDraft(''); return; } onChange([...value, t.slice(0, 60)]); setDraft(''); };
+  const [drag, setDrag] = useState<number | null>(null);
+  const [live, setLive] = useState('');
+  const norm = (t: string) => (f.orderable ? t.toUpperCase() : t);
+  const add = () => { const t = norm(draft.trim()); if (!t || value.includes(t)) { setDraft(''); return; } onChange([...value, t.slice(0, 60)]); setDraft(''); };
+  const move = (from: number, to: number) => {
+    if (to < 0 || to >= value.length || from === to) return;
+    const next = [...value]; const [x] = next.splice(from, 1); next.splice(to, 0, x); onChange(next);
+    setLive(`${x} moved to position ${to + 1} of ${next.length}.`);
+    requestAnimationFrame(() => document.getElementById(`${f.key}-chip-${to}`)?.focus());
+  };
   return (
     <div className="st-row st-wide">
       <div className="st-lab"><span className="st-label">{f.label}</span>{help}</div>
-      <div className="st-tags">
-        {value.map((t) => <span key={t} className="st-tag">{t}<button aria-label={`Remove ${t}`} onClick={() => onChange(value.filter((x) => x !== t))}><X aria-hidden /></button></span>)}
+      <div className={`st-tags${f.orderable ? ' st-ordered' : ''}`}>
+        {value.map((t, i) => (
+          <span key={t} id={`${f.key}-chip-${i}`} className={`st-tag${drag === i ? ' dragging' : ''}`}
+            {...(f.orderable ? {
+              draggable: true, tabIndex: 0, role: 'listitem', 'aria-label': `${t}, position ${i + 1} of ${value.length}. Alt plus arrow keys to move.`,
+              onDragStart: (e: React.DragEvent) => { setDrag(i); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', t); },
+              onDragOver: (e: React.DragEvent) => { if (drag !== null) e.preventDefault(); },
+              onDrop: (e: React.DragEvent) => { e.preventDefault(); if (drag !== null) move(drag, i); setDrag(null); },
+              onDragEnd: () => setDrag(null),
+              onKeyDown: (e: React.KeyboardEvent) => { if (!e.altKey) return; if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(i, i - 1); } if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); move(i, i + 1); } },
+            } : {})}>
+            {f.orderable ? <span className="st-tag-n num" aria-hidden>{i + 1}</span> : null}{t}
+            <button aria-label={`Remove ${t}`} onClick={() => onChange(value.filter((x) => x !== t))}><X aria-hidden /></button>
+          </span>
+        ))}
         <span className="hd-micfield st-tagin">
-          <input value={draft} placeholder="Add a category" aria-label={`Add to ${f.label}`} onChange={(e) => setDraft(e.target.value)}
+          <input value={draft} placeholder={f.placeholder ?? 'Add a category'} aria-label={`Add to ${f.label}`} onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(); } }} onBlur={add} />
-          <Dictate value={draft} onChange={setDraft} label="Dictate a category" />
+          <Dictate value={draft} onChange={setDraft} label={`Dictate ${f.placeholder?.toLowerCase() ?? 'a category'}`} />
         </span>
+        {f.orderable ? <span className="hd-sr" aria-live="polite">{live}</span> : null}
       </div>
     </div>
   );
