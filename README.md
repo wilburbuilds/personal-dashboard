@@ -10,8 +10,8 @@ A self-hosted personal dashboard built to run on an always-on Mac and to be reac
 
 | Tab | What it shows | Source |
 |---|---|---|
-| **Today** | A timeline of the day with a "now" rule and tonight's workout slotted in, replies worth sending, body metrics, markets and headlines | Google Calendar + Gmail (read-only), Open-Meteo, RSS / curated brief, Yahoo quotes, Fitbit exports |
-| **Projects** | Read-only kanban board | Vikunja API (GET only) |
+| **Today** | A timeline of the day with a "now" rule and tonight's workout slotted in, headlines and X trending, due-today to-dos and reminders (tick to complete, with undo), replies worth sending, body metrics, and Markets: a SPY / 10-year / WTI row plus an ordered watch list of day moves (top N, "Show more" for the rest; every row opens your TradingView chart layout) | Google Calendar + Gmail (read-only), Open-Meteo, RSS / curated brief, a local X-trends file, Apple Reminders (`remindctl`), Yahoo chart quotes (cached 60 s), Fitbit exports |
+| **Projects** | An overview of projects, then a kanban board per project with a task detail panel; cards can be dragged between buckets | Vikunja API (reads, plus card moves only) |
 | **Systems** | Up/degraded/down for every home service, with a 24-hour history | Services table in a vault note, local probes, optional health feed JSON |
 | **Budget** | Pace vs. target, category trends, upcoming bills, card interest, and a short "what to do" list | Actual Budget via `@actual-app/api`, cached by a read-only sync job |
 | **Health** | Overview (sleep stages, overnight signals, activity, two-week trends) and Workouts (week strip, today's sets checklist, training log, records, a "Tell Gym" box for a coaching agent) | Fitbit raw exports + training notes in the vault |
@@ -31,7 +31,7 @@ The gear at the bottom of the rail (or **More → Settings** on a phone, or `⇧
 
 - **Pages:** show, hide and reorder tabs (drag or arrow buttons). The order drives the rail, the phone bar (first four visible), `⌘1–9` and `⌥↑`/`⌥↓`. Today can't be hidden and at least one tab always stays visible.
 - **Appearance:** theme (System / Dark / Light, applied server-side so every device matches) and web fonts.
-- **Per-tab knobs**, declared by each plugin's optional `settings` schema: Today's headline sentence, weather city and topics; Budget's over-pace threshold, bill categories and reminder window; Health's temperature unit, nav badge and training-log status; which vaults Query searches; how notes render task checkboxes and Dataview blocks.
+- **Per-tab knobs**, declared by each plugin's optional `settings` schema: Today's headline sentence, headline and trend counts, market tickers (orderable chips: drag or `Alt+←/→`), how many show before "Show more", ticker order (saved, or an order-only `holdings-rank.json` a local agent keeps fresh) and the TradingView chart layout URL; weather location and headline topics are edited in place on Today; Budget's over-pace threshold, bill categories and reminder window; Health's temperature unit, nav badge and training-log status; which vaults Query searches; how notes render task checkboxes and Dataview blocks.
 
 Changes autosave to `~/.config/home-dashboard/settings.json` (mode 600, outside the repo, override with `HD_SETTINGS_FILE`). The file is validated with zod and layered over `lib/home-config.mjs`; an invalid file falls back to the defaults. Each section has its own Reset.
 
@@ -130,7 +130,7 @@ Process env:
 
 - **Built for a tailnet, not the internet.** The server listens on 127.0.0.1, checks `Host` and `Origin`, and refuses cross-site writes. Tailscale Serve terminates HTTPS. There is no login system, so do not port-forward it or enable Funnel.
 - **Personal data stays out of Git.** Health exports, messages, budget data, vault content, tokens and databases belong outside the repository. `.gitignore` covers env files, SQLite/DB files, logs and caches.
-- **Writes are narrow.** The only vault writes are the two edits described under Architecture; Settings writes only its own `settings.json`.
+- **Writes are narrow.** The only vault writes are the two edits described under Architecture; Settings writes only its own `settings.json`. Outside the vault there are exactly two: moving a Vikunja card between buckets (`POST /api/projects/move`) and completing or un-completing an open Apple Reminder by id (`POST /api/todos/reminder`, same-origin, strictly validated, logged). Markets stores tickers and their order only, never quantities or values.
 
 ## License
 
