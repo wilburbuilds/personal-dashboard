@@ -126,6 +126,43 @@ Process env:
 - **Other integrations:** `GROK_BIN`, `HOMEKIT_BIND_ADDRESS`, `HOMEKIT_RECEIVER_URL`
 - **App internals and demo:** `HD_DATA_DIR`, `HD_ENV_FILE`, `HD_LOAD_LOG`, `HD_SERVICES_FILE`, `HD_HEALTH_FEED`, `HD_QUERY_VAULTS`, `HD_SETTINGS_FILE`, `HD_DEMO`, `HD_DEMO_DIR`
 
+## What powers this
+
+| System | Role |
+|---|---|
+| [Grok Bot](https://x.ai/bot) | A small team of AI bots that keep the data fresh and the app moving: a fitness bot writes the day's workout, a news bot writes the X trends file, a finance bot keeps the ticker order current, and an engineering bot builds and ships the app itself. Bots only write files the dashboard reads; the dashboard never calls them. |
+| [Obsidian](https://obsidian.md) | Git-backed markdown vaults: notes, training plans and logs, the services table, and everything Query searches. |
+| [Vikunja](https://vikunja.io) | Self-hosted projects and kanban boards (read, plus moving cards between buckets). |
+| [Apple Reminders](https://support.apple.com/guide/reminders/welcome/mac) | Due-today to-dos, read and ticked off through a local CLI. |
+| [Tailscale Serve](https://tailscale.com/kb/1312/serve) | HTTPS on the tailnet only; nothing is exposed to the internet. |
+| [Actual Budget](https://actualbudget.org) | Self-hosted budgeting, read by a scheduled sync job. |
+| [Fitbit Web API](https://dev.fitbit.com/build/reference/web-api/) | A self-hosted sync exports sleep, heart rate and steps as JSON into the vault. |
+| [Yahoo Finance](https://finance.yahoo.com) | Day moves for the Markets row and watch list (chart quotes, cached 60 s server-side). |
+| [RSS](https://www.rssboard.org/rss-specification) | Headlines from a short list of feeds, filtered by your topics. |
+| [Open-Meteo](https://open-meteo.com) | Weather and forecast, no API key. |
+| [Google Calendar](https://developers.google.com/calendar) and [Gmail](https://developers.google.com/gmail/api) APIs | The day's timeline and replies worth sending (read-only OAuth). |
+| [Next.js](https://nextjs.org) | The app: React server components, route handlers, one Node process. |
+| [shadcn/ui](https://ui.shadcn.com) | UI primitives (dialogs, sheets, popovers, command palette). |
+| [Recharts](https://recharts.org) | Budget and health charts. |
+| [launchd](https://support.apple.com/guide/terminal/script-management-with-launchd-apdc6c1077b-5d5d-4d35-9c19-60f2397b2369/mac) on a [Mac mini](https://www.apple.com/mac-mini/) | Keeps the server and the sync jobs running, restarts on crash. |
+
+```mermaid
+flowchart LR
+  subgraph Sources
+    V[Obsidian vaults]
+    VK[Vikunja]
+    R[Apple Reminders]
+    A[Actual Budget]
+    F[Fitbit sync]
+    G[Google Calendar / Gmail]
+    W[Open-Meteo / RSS / Yahoo]
+  end
+  B[Grok Bot team] -- workouts, notes --> V
+  B -- X trends, ticker order --> J[(local JSON files)]
+  V & VK & R & A & F & G & W & J --> S[Next.js server<br/>launchd · Mac mini]
+  S -- Tailscale Serve<br/>tailnet only --> U[Browser / phone]
+```
+
 ## Hosting and privacy
 
 - **Built for a tailnet, not the internet.** The server listens on 127.0.0.1, checks `Host` and `Origin`, and refuses cross-site writes. Tailscale Serve terminates HTTPS. There is no login system, so do not port-forward it or enable Funnel.

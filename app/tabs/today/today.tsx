@@ -122,11 +122,13 @@ export default function TodayV2({ data: tabData }: { data?: Partial<TodayData>; 
           <section className="t2-sec t2-heads" aria-labelledby="h-hl">
             <div className="sh"><h2 id="h-hl">Headlines</h2><TopicsControl topics={prefs.topics} onSave={(topics) => savePrefs({ topics })} /></div>
             {cfg.headlines ? (s.headlines?.items?.length ? (
-              <div className="t2-hgrid">
-                {s.headlines.items.slice(0, cfg.headlines).map((h, i) => (
-                  <a className="t2-hl" key={i} href={h.url} target="_blank" rel="noreferrer"><b>{h.title}</b><span>{h.label}</span></a>
-                ))}
-              </div>
+              <ul className="t2-rows">
+                {s.headlines.items.slice(0, cfg.headlines).map((h, i) => {
+                  const meta = [h.label?.split(' · ').at(-1), shortWhen(h.detail)].filter(Boolean).join(' · ');
+                  const full = [h.label, h.detail].filter(Boolean).join(' · ');
+                  return <li key={i}><a className="t2-row" href={h.url} target="_blank" rel="noreferrer" title={full ? `${h.title} — ${full}` : h.title}><b>{h.title}</b>{meta ? <span>{meta}</span> : null}</a></li>;
+                })}
+              </ul>
             ) : <p className="t2-empty">{s.headlines?.note || 'No headlines yet.'}</p>) : null}
             {cfg.trends ? <Trends t={trends} n={cfg.trends} /> : null}
           </section>
@@ -218,16 +220,27 @@ function FragmentWithNow({ show, rule, children }: { show: boolean; rule: ReactN
 
 
 
+/** "Overnight · Oct 13, 8:54 PM PT" → "8:54 PM" today, "Oct 12" otherwise. */
+function shortWhen(d?: string) {
+  if (!d) return '';
+  const m = d.match(/([A-Z][a-z]{2} \d{1,2}), (\d{1,2}:\d{2} [AP]M)/);
+  if (!m) return d;
+  const today = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' }).format(new Date());
+  return m[1] === today ? m[2] : m[1];
+}
+
 function Trends({ t, n }: { t: XTrends | null; n: number }) {
   const items = t?.items.slice(0, n) ?? [];
   return (
     <div className="t2-trends">
       <h3><a className="t2-xh" href="https://x.com/home" target="_blank" rel="noopener noreferrer" aria-label="X Trending, open your For You feed on X (new tab)" title="Open X (For You)"><svg viewBox="0 0 24 24" aria-hidden="true" className="t2-x"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.3L5.3 21H2.2l7.2-8.3L1.8 3h6.4l4.4 5.8L17.8 3Zm-1.1 16.2h1.7L7.3 4.7H5.5l11.2 14.5Z" fill="currentColor" /></svg>Trending</a></h3>
       {items.length ? (
-        <ol className="t2-tr">
+        <ol className="t2-rows t2-tr">
           {items.map((x, i) => {
-            const body = <><b>{x.title}</b><span>{[x.context, x.posts].filter(Boolean).join(' · ')}</span></>;
-            return <li key={i}>{x.url ? <a href={x.url} target="_blank" rel="noreferrer">{body}</a> : <div>{body}</div>}</li>;
+            const meta = x.posts || x.context || '';
+            const body = <><b>{x.title}</b>{meta ? <span>{meta}</span> : null}</>;
+            const tip = [x.title, x.context, x.posts].filter(Boolean).join(' — ');
+            return <li key={i}>{x.url ? <a className="t2-row" href={x.url} target="_blank" rel="noreferrer" title={tip}>{body}</a> : <div className="t2-row" title={tip}>{body}</div>}</li>;
           })}
         </ol>
       ) : (
