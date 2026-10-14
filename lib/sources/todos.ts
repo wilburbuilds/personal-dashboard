@@ -132,3 +132,44 @@ export function dueNow(t: Todos) {
   const pick = (src: 'reminders' | 'vikunja') => t[src].groups.flatMap((g) => g.items.filter((i) => i.overdue || i.dueToday).map((i) => ({ ...i, source: src, group: g.title })));
   return [...pick('reminders'), ...pick('vikunja')].sort((a, b) => Number(b.overdue) - Number(a.overdue) || (a.due ?? '').localeCompare(b.due ?? ''));
 }
+
+/* ---------- The one Reminders write: toggle completed ---------- */
+export const REMINDER_ID = /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/;
+export const toggleSchema = z.object({ id: z.string().regex(REMINDER_ID), completed: z.boolean() }).strict();
+export const UNDO_MS = 10 * 60_000;
+/** Reminders this server marked complete, so "uncheck" only works as an undo of our own recent change. */
+const completedHere = new Map<string, number>();
+
+async function logWrite(entry: Record<string, unknown>) {
+  const { appendFile } = await import('node:fs/promises');
+  await appendFile(homeConfig.loadLog, JSON.stringify({ at: new Date().toISOString(), source: 'reminders', method: 'toggle', ...entry }) + '\n').catch(() => {});
+}
+
+/**
+ * Mark one reminder complete, or (within UNDO_MS of completing it here) incomplete again.
+ * Completing requires the reminder to be open and in a list that isn't hidden. Nothing else is editable.
+ */
+export async function setReminderCompleted(id: string, completed: boolean, now = Date.now()): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  if (isDemo()) return { ok: true };
+  if (!REMINDER_ID.test(id)) return { ok: false, status: 400, error: 'Bad reminder id' };
+  if (completed) {
+    remCache = null; remFail = null;
+    const got = await remindersJson();
+    if ('note' in got) return { ok: false, status: 503, error: 'Reminders aren’t readable right now.' };
+    const list = z.array(rem).safeParse(JSON.parse(got.out));
+    const hit = list.success ? list.data.find((x) => x.id === id && !x.isCompleted) : undefined;
+    const hidden = new Set(getSettings().todos.excludeLists.map((s) => s.toLowerCase()));
+    if (!hit || hidden.has(hit.listName.toLowerCase())) return { ok: false, status: 404, error: 'That reminder isn’t open on the dashboard.' };
+  } else {
+    const at = completedHere.get(id);
+    if (!at || now - at > UNDO_MS) return { ok: false, status: 409, error: 'Undo window has passed. Reopen it in Reminders.' };
+  }
+  const args = ['edit', id, completed ? '--complete' : '--incomplete', '--format', 'quiet', '--no-input'];
+  let r = await run(REMINDCTL, args, 8000);
+  if (!r.ok) r = await run('/usr/bin/osascript', ['-e', `do shell script "${REMINDCTL} ${args.join(' ')}"`], 8000);
+  await logWrite({ id, completed, ok: r.ok });
+  if (!r.ok) return { ok: false, status: 502, error: 'Reminders didn’t accept the change.' };
+  if (completed) completedHere.set(id, now); else completedHere.delete(id);
+  remCache = null;
+  return { ok: true };
+}

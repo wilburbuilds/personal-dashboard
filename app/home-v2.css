@@ -624,3 +624,23 @@ html.light .md pre .s{color:var(--ok-ink)}html.light .md pre .k{color:var(--viz-
 .t2-ps>span.r:last-child small{display:block;font-weight:400;font-size:11.5px;text-align:right;color:inherit;opacity:.8}
 #t2-tk-list .t2-ps{grid-template-columns:minmax(0,1fr) 60px 72px 64px}
 @media (max-width:640px){#t2-tk-list .t2-ps{grid-template-columns:minmax(0,1fr) 52px 64px 58px}.t2-mk.mk3{gap:8px}}
+
+/* Reminders: check off with undo */
+.td-row.td-can{display:flex;align-items:center;gap:10px}
+.td-row.td-can>a,.td-row.td-can>div{flex:1;min-width:0;grid-template-columns:minmax(0,1fr) auto auto}
+.td-row.td-can>a{grid-template-columns:minmax(0,1fr) auto auto 14px}
+.td-check{flex:none;display:grid;place-items:center;width:18px;height:18px;padding:0;border:1.5px solid var(--text-3);border-radius:50%;background:transparent;color:var(--bg,#0f1312);cursor:pointer;transition:border-color .12s,background .12s}
+.td-check.hi{border-color:var(--viz-over)}
+.td-check:hover{border-color:var(--accent)}
+.td-check:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.td-check[aria-checked=true]{background:var(--accent);border-color:var(--accent)}
+.td-check svg{width:12px;height:12px;stroke-width:3}
+.td-check:disabled{opacity:.6;cursor:progress}
+.td-row.td-done .td-t{color:var(--text-3);text-decoration:line-through}
+.td-row.td-done .td-due{opacity:.5}
+.td-toast{position:fixed;left:50%;bottom:24px;z-index:60;display:flex;align-items:center;gap:14px;max-width:min(520px,calc(100vw - 32px));padding:10px 14px;border-radius:var(--r-lg);background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);font-size:13.5px;box-shadow:0 8px 28px rgb(0 0 0 / .35);transform:translate(-50%,16px);opacity:0;pointer-events:none;transition:opacity .16s,transform .16s}
+.td-toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.td-toast.err{border-color:var(--viz-over)}
+.td-toast span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.td-toast button{flex:none;border:0;background:transparent;color:var(--accent);font:600 13.5px var(--f-ui);cursor:pointer;padding:2px 4px}
+@media (max-width:640px){.td-toast{bottom:84px}}
