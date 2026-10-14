@@ -29,14 +29,15 @@ export const SHORTCUTS: [string[], string][] = [
   [['⌥', '↑'], 'Previous tab'],
   [['⌥', '↓'], 'Next tab (in your page order)'],
   [['⌘', '1–9'], 'Go to tab by position'],
-  [['g', 't · h · b · s · p · q'], 'Go to Today, Health, Budget, Systems, Projects, Query'],
+  [['g', 't · p · s · b · h · q'], 'Go to Today, Projects, Systems, Budget, Health, Query'],
+  [['s'], 'Go to Systems'],
   [['/'], 'Focus search (opens Query when the tab has none)'],
   [['j'], 'Next row in a list'],
   [['k'], 'Previous row in a list'],
   [['Enter'], 'Open or toggle the focused row'],
   [['[', ']'], 'Previous or next view (Overview, Workouts)'],
   [['r'], 'Refresh this tab'],
-  [['s'], 'Open Settings'],
+  [['⇧', 'S'], 'Open Settings'],
   [['?'], 'Show these shortcuts'],
   [['Esc'], 'Close the palette, a sheet or this overlay'],
 ];
@@ -101,10 +102,12 @@ export function Shell({ items, phoneTabs, theme, children }: { items: NavItem[];
         if (links.length > 1) { e.preventDefault(); links[(at + (e.key === ']' ? 1 : -1) + links.length) % links.length].click(); }
         return;
       }
-      if (e.key === 'r' && !pendingG.current) { router.refresh(); return; }
-      if (e.key === 's' && !(Date.now() - pendingG.current < 1200)) { router.push('/t/settings'); return; }
+      const gArmed = Date.now() - pendingG.current < 1200;
+      if (e.shiftKey && e.code === 'KeyS') { e.preventDefault(); pendingG.current = 0; router.push('/t/settings'); return; }
+      if (e.key === 'r' && !gArmed) { router.refresh(); return; }
+      if (e.key === 's' && !gArmed) { const sys = items.find((i) => i.id === 'systems'); if (sys) router.push(sys.href); return; }
       if (e.key === 'g') { pendingG.current = Date.now(); return; }
-      if (Date.now() - pendingG.current < 1200 && keyFor[e.key]) {
+      if (gArmed && keyFor[e.key]) {
         const item = items.find((i) => i.id === keyFor[e.key]);
         pendingG.current = 0;
         if (item) router.push(item.href);
@@ -146,7 +149,7 @@ export function Shell({ items, phoneTabs, theme, children }: { items: NavItem[];
             <button className="hd-linkish" onClick={() => setHelp(true)}><kbd>?</kbd> shortcuts</button>
             <Link href="/t/settings" className={`hd-gear${onSettings ? ' on' : ''}`} aria-current={onSettings ? 'page' : undefined} prefetch>
               {onSettings ? <motion.span layoutId="hd-rail-ind" className="hd-ind" transition={{ type: 'spring', stiffness: 420, damping: 36 }} /> : null}
-              <Gear aria-hidden className="hd-i" /><span className="hd-label">Settings</span><kbd>s</kbd>
+              <Gear aria-hidden className="hd-i" /><span className="hd-label">Settings</span><kbd>⇧S</kbd>
             </Link>
           </div>
         </aside>
@@ -251,7 +254,7 @@ function PaletteBody({ items, go, close, setTheme, showHelp }: { items: NavItem[
           <Command.Item onSelect={() => { setTheme('dark'); close(); }}>Theme: Dark</Command.Item>
           <Command.Item onSelect={() => { setTheme('light'); close(); }}>Theme: Light</Command.Item>
           <Command.Item onSelect={() => { setTheme('system'); close(); }}>Theme: System</Command.Item>
-          <Command.Item value="settings preferences pages order hide show" onSelect={() => go('/t/settings')}><Gear className="hd-i" aria-hidden /><span>Open Settings</span><kbd className="hd-pk">s</kbd></Command.Item>
+          <Command.Item value="settings preferences pages order hide show" onSelect={() => go('/t/settings')}><Gear className="hd-i" aria-hidden /><span>Open Settings</span><kbd className="hd-pk">⇧S</kbd></Command.Item>
         </Command.Group>
         <Command.Group heading="Keyboard shortcuts">
           <Command.Item value="keyboard shortcuts help" onSelect={showHelp}><Keyboard className="hd-i" aria-hidden /><span>Show all shortcuts</span><kbd className="hd-pk">?</kbd></Command.Item>
